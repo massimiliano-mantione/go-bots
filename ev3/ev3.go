@@ -10,16 +10,26 @@ import (
 )
 
 type Ev3Devices struct {
-	In1  string
-	In2  string
-	In3  string
-	In4  string
-	OutA string
-	OutB string
-	OutC string
-	OutD string
-	LedL string
-	LedR string
+	Port0         string
+	Port1         string
+	Port2         string
+	Port3         string
+	Port4         string
+	Port5         string
+	Port6         string
+	Port7         string
+	In1           string
+	In2           string
+	In3           string
+	In4           string
+	OutA          string
+	OutB          string
+	OutC          string
+	OutD          string
+	LedRightGreen string
+	LedRightRed   string
+	LedLeftGreen  string
+	LedLeftRed    string
 }
 
 const DriverIr = "lego-ev3-ir"
@@ -313,6 +323,22 @@ func OpenTextW(dev string, attr string) *Attribute {
 func Scan() *Ev3Devices {
 	devs := Ev3Devices{}
 	classes := "/sys/class"
+
+	ports := fp.Join(classes, "ports")
+	devs.Port0 = fp.Join(ports, "port0")
+	devs.Port1 = fp.Join(ports, "port1")
+	devs.Port2 = fp.Join(ports, "port2")
+	devs.Port3 = fp.Join(ports, "port3")
+	devs.Port4 = fp.Join(ports, "port4")
+	devs.Port5 = fp.Join(ports, "port5")
+	devs.Port6 = fp.Join(ports, "port6")
+	devs.Port7 = fp.Join(ports, "port7")
+
+	leds := fp.Join(classes, "leds")
+	devs.LedRightGreen = fp.Join(leds, "ev3:right:green:ev3dev")
+	devs.LedRightRed = fp.Join(leds, "ev3:right:red:ev3dev")
+	devs.LedLeftGreen = fp.Join(leds, "ev3:left:green:ev3dev")
+	devs.LedLeftRed = fp.Join(leds, "ev3:left:red:ev3dev")
 
 	sensors, _ := fp.Glob(fp.Join(classes, "/*/sensor*"))
 	for _, s := range sensors {
