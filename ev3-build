@@ -1,4 +1,4 @@
 #!/bin/bash
 pushd $GOPATH/src/go-bots > /dev/null
-env GOARM=5 GOARCH=arm GOOS=linux gb build $1 && echo $GOPATH/bin/$1-linux-arm robot@$2:/home/robot/go/$1
+env GOARM=5 GOARCH=arm GOOS=linux gb build $1 && $GOPATH/bin/$1-linux-arm robot@$2:/home/robot/go/$1
 popd > /dev/null
