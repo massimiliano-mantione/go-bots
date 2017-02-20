@@ -7,6 +7,7 @@ import (
 	"os"
 	fp "path/filepath"
 	"strings"
+	"time"
 )
 
 type Ev3Devices struct {
@@ -392,4 +393,12 @@ func Scan() *Ev3Devices {
 	}
 
 	return &devs
+}
+
+func DurationToMillis(d time.Duration) int {
+	return int(d / 1000000)
+}
+
+func TimespanAsMillis(start time.Time, end time.Time) int {
+	return DurationToMillis(end.Sub(start))
 }
