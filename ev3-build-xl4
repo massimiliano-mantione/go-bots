@@ -1,0 +1,4 @@
+#!/bin/bash
+pushd $GOPATH/src/go-bots > /dev/null
+./ev3-build xl4 $1
+popd > /dev/null
