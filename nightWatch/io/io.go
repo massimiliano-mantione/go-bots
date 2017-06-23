@@ -75,36 +75,43 @@ func Init(d chan<- logic.Data, c <-chan logic.Commands) {
 	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
 }
 
+func executor() {
+	for c := range commands {
+		// log.Println("Execute:", c)
+
+		mr.Value = -c.SpeedRight
+		ml.Value = -c.SpeedLeft
+		mc.Value = -(c.SpeedRight + c.SpeedLeft) / 2
+		mf.Value = -c.SpeedFront
+		mr.Sync()
+		mc.Sync()
+		ml.Sync()
+		mf.Sync()
+	}
+}
+
 func Loop() {
 	start = time.Now()
 	sensorTicks := time.Tick(10 * time.Millisecond)
 
-	for {
-		select {
-		case t := <-sensorTicks:
-			pf.Sync()
-			colR.Sync()
-			colL.Sync()
-			irR.Sync()
-			irL.Sync()
+	go executor()
 
-			vision.Process(pf.Value, irR.Value, irL.Value)
+	for t := range sensorTicks {
+		millis := ev3.TimespanAsMillis(start, t)
 
-			data <- logic.Data{
-				Start:            start,
-				Millis:           ev3.TimespanAsMillis(start, t),
-				CornerRightIsOut: colorIsOut(colR.Value),
-				CornerLeftIsOut:  colorIsOut(colL.Value),
-			}
-		case c := <-commands:
-			mr.Value = c.SpeedRight
-			ml.Value = c.SpeedLeft
-			mc.Value = (c.SpeedRight + c.SpeedLeft) / 2
-			mf.Value = c.SpeedFront
-			mr.Sync()
-			mc.Sync()
-			ml.Sync()
-			mf.Sync()
+		pf.Sync()
+		colR.Sync()
+		colL.Sync()
+		irR.Sync()
+		irL.Sync()
+
+		vision.Process(millis, pf.Value, irR.Value, irL.Value)
+
+		data <- logic.Data{
+			Start:            start,
+			Millis:           millis,
+			CornerRightIsOut: colorIsOut(colR.Value),
+			CornerLeftIsOut:  colorIsOut(colL.Value),
 		}
 	}
 }
