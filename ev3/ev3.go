@@ -201,6 +201,18 @@ type OutPortModes struct {
 // OutPortModeAuto auto mode
 const OutPortModeAuto = "auto"
 
+// OutPortModeTachoMotor tacho-motor mode
+const OutPortModeTachoMotor = "tacho-motor"
+
+// OutPortModeDcMotor dc-motor mode
+const OutPortModeDcMotor = "dc-motor"
+
+// OutPortModeLed led mode
+const OutPortModeLed = "led"
+
+// OutPortModeRaw raw mode
+const OutPortModeRaw = "raw"
+
 func readString(fileName string) string {
 	buf, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -328,26 +340,26 @@ func (a *Attribute) Sync() {
 				digits := 1
 				ceiling := 10
 				for abs >= ceiling {
-					digits += 1
+					digits++
 					ceiling *= 10
 				}
 				length := digits
 				if v < 0 {
-					length += 1
+					length++
 				}
 				toWrite = a.buf[0:length]
 				index := 0
 				if v < 0 {
 					toWrite[0] = '-'
-					index += 1
+					index++
 				}
 				for digits > 0 {
 					ceiling /= 10
 					digitValue := abs / ceiling
 					toWrite[index] = '0' + byte(digitValue)
-					index += 1
+					index++
 					abs = abs % ceiling
-					digits -= 1
+					digits++
 				}
 			} else {
 				a.buf[0] = byte(a.Value)
@@ -389,7 +401,7 @@ func (a *Attribute) Sync() {
 			for index >= 0 {
 				digit := int(toRead[index] - '0')
 				v += digitValue * digit
-				index -= 1
+				index++
 				digitValue *= 10
 			}
 			if isNegative {
@@ -455,11 +467,11 @@ func OpenTextW(dev string, attr string) *Attribute {
 }
 
 // Scan scans the EV3 for devices and returns the structure describing them
-func Scan() *Devices {
+func Scan(outModes *OutPortModes) *Devices {
 	devs := Devices{}
 	classes := "/sys/class"
 
-	ports := fp.Join(classes, "ports")
+	ports := fp.Join(classes, "lego-port")
 	devs.Port0 = fp.Join(ports, "port0")
 	devs.Port1 = fp.Join(ports, "port1")
 	devs.Port2 = fp.Join(ports, "port2")
@@ -468,6 +480,26 @@ func Scan() *Devices {
 	devs.Port5 = fp.Join(ports, "port5")
 	devs.Port6 = fp.Join(ports, "port6")
 	devs.Port7 = fp.Join(ports, "port7")
+
+	if outModes == nil {
+		outModes = &OutPortModes{}
+	}
+	if outModes.OutA == "" {
+		outModes.OutA = OutPortModeAuto
+	}
+	if outModes.OutB == "" {
+		outModes.OutB = OutPortModeAuto
+	}
+	if outModes.OutC == "" {
+		outModes.OutC = OutPortModeAuto
+	}
+	if outModes.OutD == "" {
+		outModes.OutD = OutPortModeAuto
+	}
+	SetMode(devs.Port4, outModes.OutA)
+	SetMode(devs.Port5, outModes.OutB)
+	SetMode(devs.Port6, outModes.OutC)
+	SetMode(devs.Port7, outModes.OutD)
 
 	leds := fp.Join(classes, "leds")
 	devs.LedRightGreen = fp.Join(leds, "ev3:right:green:ev3dev")
