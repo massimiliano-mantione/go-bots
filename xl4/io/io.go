@@ -20,10 +20,12 @@ var colR, colL, irR, irL *ev3.Attribute
 
 var start time.Time
 
+// StartTime gets the time when the bot started
 func StartTime() time.Time {
 	return start
 }
 
+// Init initializes the io module
 func Init(d chan<- logic.Data, c <-chan logic.Commands) {
 	devs = ev3.Scan(&ev3.OutPortModes{
 		OutA: ev3.OutPortModeDcMotor,
@@ -102,6 +104,7 @@ func executor() {
 	}
 }
 
+// Loop contains the io loop
 func Loop() {
 	start = time.Now()
 	sensorTicks := time.Tick(10 * time.Millisecond)
@@ -127,6 +130,7 @@ func Loop() {
 	}
 }
 
+// Close terminates and cleans up the io module
 func Close() {
 	defer ev3.RunCommand(devs.OutA, ev3.CmdStop)
 	defer ev3.RunCommand(devs.OutB, ev3.CmdStop)
