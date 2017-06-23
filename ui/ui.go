@@ -5,16 +5,25 @@ import "log"
 import "golang.org/x/crypto/ssh/terminal"
 import "time"
 
+// Key represent keyboard events
 type Key int
 
 const (
+	// None is the empty input event (likely never needed)
 	None Key = iota
+	// Enter key
 	Enter
+	// Back (backspace on keyboard) key
 	Back
+	// Up (arrow up) key
 	Up
+	// Down (arrow down) key
 	Down
+	// Right (arrow right) key
 	Right
+	// Left (arrow left) key
 	Left
+	// Quit event (CTRL-C on keyboard or quick ENTER-BACK on EV3 keypad)
 	Quit
 )
 
@@ -23,6 +32,7 @@ var state *terminal.State
 
 var lastEnterTime time.Time
 
+// Init initializes the terminal
 func Init(k chan<- Key) {
 	var err error
 	keys = k
@@ -34,6 +44,7 @@ func Init(k chan<- Key) {
 
 const quitEvent = "custom/quitEvent"
 
+// Close stops the ui loop and resets the terminal to its previous state
 func Close() {
 	log.Println("Closing terminal")
 	if state != nil {
@@ -42,6 +53,7 @@ func Close() {
 	t.SendCustomEvt(quitEvent, nil)
 }
 
+// Loop runs the ui loop, writing events to the channel
 func Loop() {
 	err := t.Init()
 	if err != nil {
