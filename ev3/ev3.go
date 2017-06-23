@@ -10,7 +10,8 @@ import (
 	"time"
 )
 
-type Ev3Devices struct {
+// Devices contains connected devices
+type Devices struct {
 	Port0         string
 	Port1         string
 	Port2         string
@@ -33,64 +34,172 @@ type Ev3Devices struct {
 	LedLeftRed    string
 }
 
+// DriverIr IR sensor driver constant
 const DriverIr = "lego-ev3-ir"
+
+// DriverColor color sensor driver constant
 const DriverColor = "lego-ev3-color"
+
+// DriverTachoMotorLarge large tacho motor driver constant
 const DriverTachoMotorLarge = "lego-ev3-l-motor"
+
+// DriverTachoMotorMedium medium tacho motor driver constant
 const DriverTachoMotorMedium = "lego-ev3-m-motor"
+
+// DriverDcMotor DC motor driver constant
 const DriverDcMotor = "dc-motor"
+
+// DriverRcxMotor rcx motor driver constant
 const DriverRcxMotor = "rcx-motor"
 
+// IrModeProx IR sensor proximity mode
 const IrModeProx = "IR-PROX"
+
+// IrModeRemote IR sensor remote control mode
 const IrModeRemote = "IR-REMOTE"
 
+// ColorModeReflect color sensor reflective mode
 const ColorModeReflect = "COL-REFLECT"
+
+// ColorModeColor color sensor RGB mode
 const ColorModeColor = "COL-COLOR"
+
+// ColorModeAmbient color sensor ambient light mode
 const ColorModeAmbient = "COL-AMBIENT"
+
+// ColorModeRaw color sensor raw mode
 const ColorModeRaw = "COL-RAW"
 
+// In1 input port 1
 const In1 = "in1"
+
+// In2 input port 1
 const In2 = "in2"
+
+// In3 input port 1
 const In3 = "in3"
+
+// In4 input port 4
 const In4 = "in4"
+
+// OutA output port A
 const OutA = "outA"
+
+// OutB output port B
 const OutB = "outB"
+
+// OutC output port C
 const OutC = "outC"
+
+// OutD output port D
 const OutD = "outD"
 
+// Address attribute
 const Address = "address"
+
+// Value0 attribute
 const Value0 = "value0"
+
+// Value1 attribute
 const Value1 = "value1"
+
+// Value2 attribute
 const Value2 = "value2"
+
+// Value3 attribute
 const Value3 = "value3"
+
+// BinData attribute
 const BinData = "bin_data"
+
+// Mode attribute
 const Mode = "mode"
+
+// Modes attribute
 const Modes = "modes"
+
+// Command attribute
 const Command = "command"
+
+// Commands attribute
 const Commands = "commands"
+
+// DriverName attribute
 const DriverName = "driver_name"
 
+// CountPerRot attribute
 const CountPerRot = "count_per_rot"
+
+// DutyCycle attribute
 const DutyCycle = "duty_cycle"
+
+// DutyCycleSp attribute
 const DutyCycleSp = "duty_cycle_sp"
+
+// MaxSpeed attribute
 const MaxSpeed = "max_speed"
+
+// Polarity attribute
 const Polarity = "polarity"
+
+// Position attribute
 const Position = "position"
+
+// PositionSp attribute
 const PositionSp = "position_sp"
+
+// Speed attribute
 const Speed = "speed"
+
+// SpeedSp attribute
 const SpeedSp = "speed_sp"
+
+// State attribute
 const State = "state"
+
+// StopAction attribute
 const StopAction = "stop_action"
+
+// StopActions attribute
 const StopActions = "stop_actions"
+
+// TimeSp attribute
 const TimeSp = "time_sp"
+
+// Uevent attribute
 const Uevent = "uevent"
 
+// CmdRunForever motor command
 const CmdRunForever = "run-forever"
+
+// CmdRunToAbsPos motor command
 const CmdRunToAbsPos = "run-to-abs-pos"
+
+// CmdRunToRelPos motor command
 const CmdRunToRelPos = "run-to-rel-pos"
+
+// CmdRunTimed motor command
 const CmdRunTimed = "run-timed"
+
+// CmdRunDirect motor command
 const CmdRunDirect = "run-direct"
+
+// CmdStop motor command
 const CmdStop = "stop"
+
+// CmdReset motor command
 const CmdReset = "reset"
+
+// OutPortModes is used to set out port modes
+type OutPortModes struct {
+	OutA string
+	OutB string
+	OutC string
+	OutD string
+}
+
+// OutPortModeAuto auto mode
+const OutPortModeAuto = "auto"
 
 func readString(fileName string) string {
 	buf, err := ioutil.ReadFile(fileName)
@@ -118,13 +227,17 @@ func contains(stringSlice []string, search string) bool {
 	return false
 }
 
+// ReadStringAttribute reads the value of a string attribute on a device
 func ReadStringAttribute(dev string, attr string) string {
 	return readString(fp.Join(dev, attr))
 }
+
+// WriteStringAttribute writes the value of a string attribute on a device
 func WriteStringAttribute(dev string, attr string, v string) {
 	writeString(fp.Join(dev, attr), v)
 }
 
+// SetMode sets the mode attribute on a device
 func SetMode(dev string, mode string) {
 	modesText := ReadStringAttribute(dev, Modes)
 	modes := strings.Split(modesText, " ")
@@ -134,6 +247,7 @@ func SetMode(dev string, mode string) {
 	WriteStringAttribute(dev, Mode, mode)
 }
 
+// SetStopAction sets the stop action on a motor device
 func SetStopAction(dev string, action string) {
 	actionsText := ReadStringAttribute(dev, StopActions)
 	actions := strings.Split(actionsText, " ")
@@ -143,6 +257,7 @@ func SetStopAction(dev string, action string) {
 	WriteStringAttribute(dev, StopAction, action)
 }
 
+// CheckCommand checks that a device supports a given command
 func CheckCommand(dev string, cmd string) {
 	commandsText := ReadStringAttribute(dev, Commands)
 	commands := strings.Split(commandsText, " ")
@@ -151,10 +266,12 @@ func CheckCommand(dev string, cmd string) {
 	}
 }
 
+// RunCommand writes a value to the command attribute
 func RunCommand(dev string, cmd string) {
 	WriteStringAttribute(dev, Command, cmd)
 }
 
+// CheckDriver checks that a device has the given driver
 func CheckDriver(dev string, driver string) {
 	actualDriver := ReadStringAttribute(dev, DriverName)
 	if actualDriver != driver {
@@ -164,6 +281,7 @@ func CheckDriver(dev string, driver string) {
 
 const attributeBufSize int = 64
 
+// Attribute holds an open file on a given attribute so that subsequent operations are faster
 type Attribute struct {
 	path         string
 	file         *os.File
@@ -174,12 +292,17 @@ type Attribute struct {
 	buf          [attributeBufSize]byte
 }
 
+// Path gets the attribute file full path
 func (a *Attribute) Path() string {
 	return a.path
 }
+
+// Writable checks if the attribute is writable
 func (a *Attribute) Writable() bool {
 	return a.writable
 }
+
+// Close closes the attribute
 func (a *Attribute) Close() {
 	err := a.file.Close()
 	if err != nil {
@@ -188,6 +311,7 @@ func (a *Attribute) Close() {
 	a.file = nil
 }
 
+// Sync reads or writes the attribute value (according to the "writable" status)
 func (a *Attribute) Sync() {
 	if a.file == nil {
 		log.Fatalln("Cannot write to closed attribute", a.path)
@@ -285,6 +409,7 @@ func (a *Attribute) Sync() {
 	}
 }
 
+// OpenAttribute creates an attribute struct opening the relevant file
 func OpenAttribute(dev string, attr string, writable bool, text bool) *Attribute {
 	path := fp.Join(dev, attr)
 	flag := os.O_RDONLY
@@ -309,21 +434,29 @@ func OpenAttribute(dev string, attr string, writable bool, text bool) *Attribute
 	}
 }
 
+// OpenByteR opens a byte attribute for reading
 func OpenByteR(dev string, attr string) *Attribute {
 	return OpenAttribute(dev, attr, false, false)
 }
+
+// OpenByteW opens a byte attribute for writing
 func OpenByteW(dev string, attr string) *Attribute {
 	return OpenAttribute(dev, attr, true, false)
 }
+
+// OpenTextR opens a string attribute for reading
 func OpenTextR(dev string, attr string) *Attribute {
 	return OpenAttribute(dev, attr, false, true)
 }
+
+// OpenTextW opens a string attribute for writing
 func OpenTextW(dev string, attr string) *Attribute {
 	return OpenAttribute(dev, attr, true, true)
 }
 
-func Scan() *Ev3Devices {
-	devs := Ev3Devices{}
+// Scan scans the EV3 for devices and returns the structure describing them
+func Scan() *Devices {
+	devs := Devices{}
 	classes := "/sys/class"
 
 	ports := fp.Join(classes, "ports")
@@ -396,10 +529,12 @@ func Scan() *Ev3Devices {
 	return &devs
 }
 
+// DurationToMillis converts a time.Duration to milliseconds
 func DurationToMillis(d time.Duration) int {
 	return int(d / 1000000)
 }
 
+// TimespanAsMillis converts a time interval to milliseconds
 func TimespanAsMillis(start time.Time, end time.Time) int {
 	return DurationToMillis(end.Sub(start))
 }

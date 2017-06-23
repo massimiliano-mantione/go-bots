@@ -11,7 +11,7 @@ func colorIsOut(v int) bool {
 	return v > 20
 }
 
-var devs *ev3.Ev3Devices
+var devs *ev3.Devices
 var data chan<- logic.Data
 var commands <-chan logic.Commands
 
