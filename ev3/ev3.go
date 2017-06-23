@@ -38,6 +38,7 @@ const DriverColor = "lego-ev3-color"
 const DriverTachoMotorLarge = "lego-ev3-l-motor"
 const DriverTachoMotorMedium = "lego-ev3-m-motor"
 const DriverDcMotor = "dc-motor"
+const DriverRcxMotor = "rcx-motor"
 
 const IrModeProx = "IR-PROX"
 const IrModeRemote = "IR-REMOTE"
