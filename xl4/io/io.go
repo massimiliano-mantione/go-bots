@@ -25,7 +25,12 @@ func StartTime() time.Time {
 }
 
 func Init(d chan<- logic.Data, c <-chan logic.Commands) {
-	devs = ev3.Scan()
+	devs = ev3.Scan(&ev3.OutPortModes{
+		OutA: ev3.OutPortModeDcMotor,
+		OutB: ev3.OutPortModeDcMotor,
+		OutC: ev3.OutPortModeDcMotor,
+		OutD: ev3.OutPortModeDcMotor,
+	})
 	data = d
 	commands = c
 
