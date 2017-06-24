@@ -291,6 +291,12 @@ func CheckDriver(dev string, driver string) {
 	}
 }
 
+// CheckMode checks that a device is set to the given mode
+func CheckMode(dev string, mode string) bool {
+	actualMode := ReadStringAttribute(dev, Mode)
+	return actualMode == mode
+}
+
 const attributeBufSize int = 64
 
 // Attribute holds an open file on a given attribute so that subsequent operations are faster
@@ -359,7 +365,7 @@ func (a *Attribute) Sync() {
 					toWrite[index] = '0' + byte(digitValue)
 					index++
 					abs = abs % ceiling
-					digits++
+					digits--
 				}
 			} else {
 				a.buf[0] = byte(a.Value)
@@ -401,7 +407,7 @@ func (a *Attribute) Sync() {
 			for index >= 0 {
 				digit := int(toRead[index] - '0')
 				v += digitValue * digit
-				index++
+				index--
 				digitValue *= 10
 			}
 			if isNegative {
@@ -432,9 +438,6 @@ func OpenAttribute(dev string, attr string, writable bool, text bool) *Attribute
 	if err != nil {
 		log.Fatalln("Cannot open device", dev, ":", err)
 	}
-
-	log.Println("Open", path, "writable", writable, "text", text)
-
 	return &Attribute{
 		path:         path,
 		file:         f,
@@ -496,10 +499,29 @@ func Scan(outModes *OutPortModes) *Devices {
 	if outModes.OutD == "" {
 		outModes.OutD = OutPortModeAuto
 	}
-	SetMode(devs.Port4, outModes.OutA)
-	SetMode(devs.Port5, outModes.OutB)
-	SetMode(devs.Port6, outModes.OutC)
-	SetMode(devs.Port7, outModes.OutD)
+
+	sleep := false
+	if !CheckMode(devs.Port4, outModes.OutA) {
+		SetMode(devs.Port4, outModes.OutA)
+		sleep = true
+	}
+	if !CheckMode(devs.Port5, outModes.OutB) {
+		SetMode(devs.Port5, outModes.OutB)
+		sleep = true
+	}
+	if !CheckMode(devs.Port6, outModes.OutC) {
+		SetMode(devs.Port6, outModes.OutC)
+		sleep = true
+	}
+	if !CheckMode(devs.Port7, outModes.OutD) {
+		SetMode(devs.Port7, outModes.OutD)
+		sleep = true
+	}
+	if sleep {
+		log.Println("Sleep...")
+		time.Sleep(500 * time.Millisecond)
+		log.Println("Slept.")
+	}
 
 	leds := fp.Join(classes, "leds")
 	devs.LedRightGreen = fp.Join(leds, "ev3:right:green:ev3dev")
@@ -557,7 +579,6 @@ func Scan(outModes *OutPortModes) *Devices {
 			log.Fatalln("Unknown port", port, "for dc motor", m)
 		}
 	}
-
 	return &devs
 }
 
