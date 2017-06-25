@@ -37,22 +37,22 @@ func Init(d chan<- logic.Data, c <-chan logic.Commands) {
 	commands = c
 
 	// IR left
-	ev3.CheckDriver(devs.In1, ev3.DriverIr)
+	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
 	// Color left
-	ev3.CheckDriver(devs.In2, ev3.DriverColor)
+	ev3.CheckDriver(devs.In2, ev3.DriverColor, ev3.In2)
 	// IR right
-	ev3.CheckDriver(devs.In3, ev3.DriverIr)
+	ev3.CheckDriver(devs.In3, ev3.DriverIr, ev3.In3)
 	// Color right
-	ev3.CheckDriver(devs.In4, ev3.DriverColor)
+	ev3.CheckDriver(devs.In4, ev3.DriverColor, ev3.In4)
 
 	// Left back inverted
-	ev3.CheckDriver(devs.OutA, ev3.DriverRcxMotor)
+	ev3.CheckDriver(devs.OutA, ev3.DriverRcxMotor, ev3.OutA)
 	// Left front direct
-	ev3.CheckDriver(devs.OutB, ev3.DriverRcxMotor)
+	ev3.CheckDriver(devs.OutB, ev3.DriverRcxMotor, ev3.OutB)
 	// Right front direct
-	ev3.CheckDriver(devs.OutC, ev3.DriverRcxMotor)
+	ev3.CheckDriver(devs.OutC, ev3.DriverRcxMotor, ev3.OutC)
 	// Right back direct
-	ev3.CheckDriver(devs.OutD, ev3.DriverRcxMotor)
+	ev3.CheckDriver(devs.OutD, ev3.DriverRcxMotor, ev3.OutD)
 
 	ev3.SetMode(devs.In1, ev3.IrModeProx)
 	ev3.SetMode(devs.In2, ev3.ColorModeReflect)

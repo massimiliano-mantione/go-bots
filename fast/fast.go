@@ -7,20 +7,20 @@ import (
 	"time"
 )
 
-var bot = ev3.Scan()
+var bot = ev3.Scan(nil)
 
 func main() {
 	log.Printf("Devices: %#v\n", bot)
 
-	ev3.CheckDriver(bot.In1, ev3.DriverIr)
-	ev3.CheckDriver(bot.In2, ev3.DriverIr)
-	ev3.CheckDriver(bot.In3, ev3.DriverColor)
-	ev3.CheckDriver(bot.In4, ev3.DriverColor)
+	ev3.CheckDriver(bot.In1, ev3.DriverIr, ev3.In1)
+	ev3.CheckDriver(bot.In2, ev3.DriverIr, ev3.In2)
+	ev3.CheckDriver(bot.In3, ev3.DriverColor, ev3.In3)
+	ev3.CheckDriver(bot.In4, ev3.DriverColor, ev3.In4)
 
-	ev3.CheckDriver(bot.OutA, ev3.DriverTachoMotorLarge)
-	ev3.CheckDriver(bot.OutB, ev3.DriverTachoMotorLarge)
-	ev3.CheckDriver(bot.OutC, ev3.DriverTachoMotorLarge)
-	ev3.CheckDriver(bot.OutD, ev3.DriverTachoMotorMedium)
+	ev3.CheckDriver(bot.OutA, ev3.DriverTachoMotorLarge, ev3.OutA)
+	ev3.CheckDriver(bot.OutB, ev3.DriverTachoMotorLarge, ev3.OutB)
+	ev3.CheckDriver(bot.OutC, ev3.DriverTachoMotorLarge, ev3.OutC)
+	ev3.CheckDriver(bot.OutD, ev3.DriverTachoMotorMedium, ev3.OutD)
 
 	ev3.SetMode(bot.In1, ev3.IrModeProx)
 	ev3.SetMode(bot.In2, ev3.IrModeProx)
@@ -84,11 +84,11 @@ func main() {
 		select {
 		case <-ticks:
 			work(count)
-			n += 1
+			n++
 		case <-samples:
 			log.Println("Sample", count, n)
 			n = 0
-			count += 1
+			count++
 		}
 	}
 

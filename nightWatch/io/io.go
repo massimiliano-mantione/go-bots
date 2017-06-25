@@ -31,15 +31,15 @@ func Init(d chan<- logic.Data, c <-chan logic.Commands) {
 	data = d
 	commands = c
 
-	ev3.CheckDriver(devs.In1, ev3.DriverIr)
-	ev3.CheckDriver(devs.In2, ev3.DriverIr)
-	ev3.CheckDriver(devs.In3, ev3.DriverColor)
-	ev3.CheckDriver(devs.In4, ev3.DriverColor)
+	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
+	ev3.CheckDriver(devs.In2, ev3.DriverIr, ev3.In2)
+	ev3.CheckDriver(devs.In3, ev3.DriverColor, ev3.In3)
+	ev3.CheckDriver(devs.In4, ev3.DriverColor, ev3.In4)
 
-	ev3.CheckDriver(devs.OutA, ev3.DriverTachoMotorLarge)
-	ev3.CheckDriver(devs.OutB, ev3.DriverTachoMotorLarge)
-	ev3.CheckDriver(devs.OutC, ev3.DriverTachoMotorLarge)
-	ev3.CheckDriver(devs.OutD, ev3.DriverTachoMotorMedium)
+	ev3.CheckDriver(devs.OutA, ev3.DriverTachoMotorLarge, ev3.OutA)
+	ev3.CheckDriver(devs.OutB, ev3.DriverTachoMotorLarge, ev3.OutB)
+	ev3.CheckDriver(devs.OutC, ev3.DriverTachoMotorLarge, ev3.OutC)
+	ev3.CheckDriver(devs.OutD, ev3.DriverTachoMotorMedium, ev3.OutD)
 
 	ev3.SetMode(devs.In1, ev3.IrModeProx)
 	ev3.SetMode(devs.In2, ev3.IrModeProx)

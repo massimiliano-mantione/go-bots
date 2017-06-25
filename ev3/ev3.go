@@ -284,10 +284,13 @@ func RunCommand(dev string, cmd string) {
 }
 
 // CheckDriver checks that a device has the given driver
-func CheckDriver(dev string, driver string) {
+func CheckDriver(dev string, driver string, port string) {
+	if dev == "" {
+		log.Fatalln("Port", port, "has no device instead of expected driver", driver)
+	}
 	actualDriver := ReadStringAttribute(dev, DriverName)
 	if actualDriver != driver {
-		log.Fatalln("Device", dev, "has driver", actualDriver, "instead of", driver)
+		log.Fatalln("Device", dev, "in port", port, "has driver", actualDriver, "instead of", driver)
 	}
 }
 
