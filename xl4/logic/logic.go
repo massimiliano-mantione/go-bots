@@ -1,8 +1,11 @@
 package logic
 
 import (
+	"fmt"
+	"go-bots/ev3"
 	"go-bots/ui"
 	"log"
+	"os"
 	"time"
 )
 
@@ -11,74 +14,85 @@ type Data struct {
 	Millis           int
 	CornerRightIsOut bool
 	CornerLeftIsOut  bool
+	CornerRight      int
+	CornerLeft       int
 	VisionIntensity  int
 	VisionAngle      int
 }
 
 type Commands struct {
-	SpeedRight int
-	SpeedLeft  int
+	Millis        int
+	SpeedRight    int
+	SpeedLeft     int
+	LedRightRed   int
+	LedRightGreen int
+	LedLeftRed    int
+	LedLeftGreen  int
 }
 
 var data <-chan Data
-var commands chan<- Commands
+var commandProcessor func(*Commands)
 var keys <-chan ui.Key
 
-func Init(d <-chan Data, c chan<- Commands, k <-chan ui.Key) {
+func Init(d <-chan Data, c func(*Commands), k <-chan ui.Key) {
 	data = d
-	commands = c
+	commandProcessor = c
 	keys = k
 }
 
-const rampMillis = 500
-
-func computeSpeed(rightTargetSpeed int, leftTargetSpeed int, currentMillis int, startMillis int) (int, int) {
-	deltaTime := currentMillis - startMillis
-	if deltaTime < rampMillis {
-		return (rightTargetSpeed * deltaTime) / rampMillis, (leftTargetSpeed * deltaTime) / rampMillis
-	}
-	return rightTargetSpeed, leftTargetSpeed
-}
-
 func Run() {
-	var currentMillis int
-	var startMillis int
-	var rightTargetSpeed int
-	var leftTargetSpeed int
-	const slowSpeed = 60
-	const fastSpeed = 100
+	c := Commands{}
+	const fastSpeed = 10000
+	const backSpeed = -10000
 
 	for {
 		select {
 		case d := <-data:
-			currentMillis = d.Millis
-			r, l := computeSpeed(rightTargetSpeed, leftTargetSpeed, currentMillis, startMillis)
-			commands <- Commands{
-				SpeedRight: r,
-				SpeedLeft:  l,
+			c.Millis = d.Millis
+			if d.CornerRightIsOut {
+				if c.SpeedRight > 0 {
+					c.SpeedRight = backSpeed
+				}
+				if c.SpeedLeft > 0 {
+					c.SpeedLeft = backSpeed
+				}
+				c.LedRightRed = 255
+			} else if d.CornerLeftIsOut {
+				if c.SpeedRight > 0 {
+					c.SpeedRight = backSpeed
+				}
+				if c.SpeedLeft > 0 {
+					c.SpeedLeft = backSpeed
+				}
+				c.LedLeftRed = 255
+			} else {
+				c.LedRightRed = 0
+				c.LedLeftRed = 0
 			}
+
+			now := time.Now()
+			// millis := ev3.TimespanAsMillis(start, t)
+			millis := ev3.TimespanAsMillis(d.Start, now)
+			fmt.Fprintln(os.Stderr, "DATA", c.Millis, millis, d.CornerLeftIsOut, d.CornerLeft, d.CornerRightIsOut, d.CornerRight, c.SpeedLeft, c.SpeedRight)
+
+			commandProcessor(&c)
 		case k := <-keys:
 			switch k {
 			case ui.Up:
-				startMillis = currentMillis
-				rightTargetSpeed = fastSpeed
-				leftTargetSpeed = fastSpeed
+				c.SpeedRight = fastSpeed
+				c.SpeedLeft = fastSpeed
 			case ui.Down:
-				startMillis = currentMillis
-				rightTargetSpeed = -fastSpeed
-				leftTargetSpeed = -fastSpeed
+				c.SpeedRight = -fastSpeed
+				c.SpeedLeft = -fastSpeed
 			case ui.Right:
-				startMillis = currentMillis
-				rightTargetSpeed = -fastSpeed
-				leftTargetSpeed = fastSpeed
+				c.SpeedRight = -fastSpeed
+				c.SpeedLeft = fastSpeed
 			case ui.Left:
-				startMillis = currentMillis
-				rightTargetSpeed = fastSpeed
-				leftTargetSpeed = -fastSpeed
+				c.SpeedRight = fastSpeed
+				c.SpeedLeft = -fastSpeed
 			case ui.Enter:
-				startMillis = currentMillis
-				rightTargetSpeed = 0
-				leftTargetSpeed = 0
+				c.SpeedRight = 0
+				c.SpeedLeft = 0
 			case ui.Quit:
 				log.Println("Logic got clean quit (kill)")
 				return

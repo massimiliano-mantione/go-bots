@@ -1,9 +1,11 @@
 package io
 
 import (
+	"fmt"
 	"go-bots/ev3"
 	"go-bots/xl4/logic"
 	"go-bots/xl4/vision"
+	"os"
 	"time"
 )
 
@@ -18,6 +20,8 @@ var commands <-chan logic.Commands
 var mr1, mr2, ml1, ml2 *ev3.Attribute
 var colR, colL, irR, irL *ev3.Attribute
 
+var ledRR, ledRG, ledLR, ledLG *ev3.Attribute
+
 var start time.Time
 
 // StartTime gets the time when the bot started
@@ -26,7 +30,7 @@ func StartTime() time.Time {
 }
 
 // Init initializes the io module
-func Init(d chan<- logic.Data, c <-chan logic.Commands) {
+func Init(d chan<- logic.Data) {
 	devs = ev3.Scan(&ev3.OutPortModes{
 		OutA: ev3.OutPortModeDcMotor,
 		OutB: ev3.OutPortModeDcMotor,
@@ -34,7 +38,6 @@ func Init(d chan<- logic.Data, c <-chan logic.Commands) {
 		OutD: ev3.OutPortModeDcMotor,
 	})
 	data = d
-	commands = c
 
 	// IR left
 	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
@@ -73,6 +76,11 @@ func Init(d chan<- logic.Data, c <-chan logic.Commands) {
 	ml1 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
 	ml2 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
 
+	ledLG = ev3.OpenTextW(devs.LedLeftGreen, ev3.Brightness)
+	ledLR = ev3.OpenTextW(devs.LedLeftRed, ev3.Brightness)
+	ledRG = ev3.OpenTextW(devs.LedRightGreen, ev3.Brightness)
+	ledRR = ev3.OpenTextW(devs.LedRightRed, ev3.Brightness)
+
 	mr1.Value = 0
 	mr2.Value = 0
 	ml1.Value = 0
@@ -89,30 +97,67 @@ func Init(d chan<- logic.Data, c <-chan logic.Commands) {
 	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
 }
 
-func executor() {
-	for c := range commands {
-		// log.Println("Execute:", c)
+const tickMilliseconds = 10
+const forwardAcceleration = 10000 / 400
+const reverseAcceleration = 10000 / 1
 
-		mr1.Value = c.SpeedRight
-		mr2.Value = c.SpeedRight
-		ml1.Value = c.SpeedLeft
-		ml2.Value = -c.SpeedLeft
-		mr1.Sync()
-		mr2.Sync()
-		ml1.Sync()
-		ml2.Sync()
+func computeSpeed(currentSpeed int, targetSpeed int, millis int) int {
+	if currentSpeed < targetSpeed {
+		currentSpeed += (forwardAcceleration * millis)
+		if currentSpeed > targetSpeed {
+			currentSpeed = targetSpeed
+		}
 	}
+	if currentSpeed > targetSpeed {
+		currentSpeed -= (reverseAcceleration * millis)
+		if currentSpeed < targetSpeed {
+			currentSpeed = targetSpeed
+		}
+	}
+	return currentSpeed
+}
+
+var speedRight, speedLeft int
+var lastMillis, currentMillis int
+
+func ProcessCommand(c *logic.Commands) {
+	currentMillis = c.Millis
+	millis := currentMillis - lastMillis
+	speedRight = computeSpeed(speedRight, c.SpeedRight, millis)
+	speedLeft = computeSpeed(speedLeft, c.SpeedLeft, millis)
+	lastMillis = currentMillis
+
+	fmt.Fprintln(os.Stderr, " CMD", c.Millis, speedLeft, speedRight)
+
+	mr1.Value = speedRight / 100
+	mr2.Value = speedRight / 100
+	ml1.Value = speedLeft / 100
+	ml2.Value = -speedLeft / 100
+	mr1.Sync()
+	mr2.Sync()
+	ml1.Sync()
+	ml2.Sync()
+
+	ledLG.Value = c.LedLeftGreen
+	ledLR.Value = c.LedLeftRed
+	ledRG.Value = c.LedRightGreen
+	ledRR.Value = c.LedRightRed
+	ledLG.Sync()
+	ledLR.Sync()
+	ledRG.Sync()
+	ledRR.Sync()
 }
 
 // Loop contains the io loop
 func Loop() {
 	start = time.Now()
-	sensorTicks := time.Tick(10 * time.Millisecond)
+	// sensorTicks := time.Tick(10 * time.Millisecond)
 
-	go executor()
-
-	for t := range sensorTicks {
-		millis := ev3.TimespanAsMillis(start, t)
+	// for t := range sensorTicks {
+	for {
+		now := time.Now()
+		// millis := ev3.TimespanAsMillis(start, t)
+		millis := ev3.TimespanAsMillis(start, now)
 
 		colR.Sync()
 		colL.Sync()
@@ -126,6 +171,8 @@ func Loop() {
 			Millis:           millis,
 			CornerRightIsOut: colorIsOut(colR.Value),
 			CornerLeftIsOut:  colorIsOut(colL.Value),
+			CornerRight:      colR.Value,
+			CornerLeft:       colL.Value,
 		}
 	}
 }

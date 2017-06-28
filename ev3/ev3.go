@@ -190,6 +190,12 @@ const CmdStop = "stop"
 // CmdReset motor command
 const CmdReset = "reset"
 
+// Brightness led attribute
+const Brightness = "brightness"
+
+// MaxBrightness led attribute
+const MaxBrightness = "max_brightness"
+
 // OutPortModes is used to set out port modes
 type OutPortModes struct {
 	OutA string

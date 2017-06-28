@@ -7,11 +7,10 @@ import (
 )
 
 var data chan logic.Data = make(chan logic.Data)
-var commands chan logic.Commands = make(chan logic.Commands)
 var keys chan ui.Key = make(chan ui.Key)
 
 func main() {
-	io.Init(data, commands)
+	io.Init(data)
 	defer io.Close()
 	go io.Loop()
 
@@ -19,6 +18,6 @@ func main() {
 	defer ui.Close()
 	go ui.Loop()
 
-	logic.Init(data, commands, keys)
+	logic.Init(data, io.ProcessCommand, keys)
 	logic.Run()
 }
