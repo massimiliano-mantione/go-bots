@@ -80,6 +80,14 @@ func Init(d chan<- logic.Data) {
 	ledLR = ev3.OpenTextW(devs.LedLeftRed, ev3.Brightness)
 	ledRG = ev3.OpenTextW(devs.LedRightGreen, ev3.Brightness)
 	ledRR = ev3.OpenTextW(devs.LedRightRed, ev3.Brightness)
+	ledLG.Value = 0
+	ledLR.Value = 0
+	ledRG.Value = 0
+	ledRR.Value = 0
+	ledLG.Sync()
+	ledLR.Sync()
+	ledRG.Sync()
+	ledRR.Sync()
 
 	mr1.Value = 0
 	mr2.Value = 0
@@ -97,7 +105,6 @@ func Init(d chan<- logic.Data) {
 	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
 }
 
-const tickMilliseconds = 10
 const forwardAcceleration = 10000 / 400
 const reverseAcceleration = 10000 / 1
 
@@ -151,12 +158,8 @@ func ProcessCommand(c *logic.Commands) {
 // Loop contains the io loop
 func Loop() {
 	start = time.Now()
-	// sensorTicks := time.Tick(10 * time.Millisecond)
-
-	// for t := range sensorTicks {
 	for {
 		now := time.Now()
-		// millis := ev3.TimespanAsMillis(start, t)
 		millis := ev3.TimespanAsMillis(start, now)
 
 		colR.Sync()
@@ -164,7 +167,7 @@ func Loop() {
 		irR.Sync()
 		irL.Sync()
 
-		vision.Process(millis, irL.Value, irR.Value)
+		intensity, angle := vision.Process(millis, irL.Value, irR.Value)
 
 		data <- logic.Data{
 			Start:            start,
@@ -173,6 +176,8 @@ func Loop() {
 			CornerLeftIsOut:  colorIsOut(colL.Value),
 			CornerRight:      colR.Value,
 			CornerLeft:       colL.Value,
+			VisionIntensity:  intensity,
+			VisionAngle:      angle,
 		}
 	}
 }
@@ -183,6 +188,15 @@ func Close() {
 	defer ev3.RunCommand(devs.OutB, ev3.CmdStop)
 	defer ev3.RunCommand(devs.OutC, ev3.CmdStop)
 	defer ev3.RunCommand(devs.OutD, ev3.CmdStop)
+
+	ledLG.Value = 0
+	ledLR.Value = 0
+	ledRG.Value = 0
+	ledRR.Value = 0
+	ledLG.Sync()
+	ledLR.Sync()
+	ledRG.Sync()
+	ledRR.Sync()
 
 	// TODO: close all files
 	// pf, mf, ml, mc, mr

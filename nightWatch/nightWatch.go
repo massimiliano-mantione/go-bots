@@ -6,12 +6,12 @@ import (
 	"go-bots/ui"
 )
 
-var data chan logic.Data = make(chan logic.Data)
-var commands chan logic.Commands = make(chan logic.Commands)
-var keys chan ui.Key = make(chan ui.Key)
+var data = make(chan logic.Data)
+var keys = make(chan ui.Key)
+var quit = make(chan bool)
 
 func main() {
-	io.Init(data, commands)
+	io.Init(data)
 	defer io.Close()
 	go io.Loop()
 
@@ -19,6 +19,7 @@ func main() {
 	defer ui.Close()
 	go ui.Loop()
 
-	logic.Init(data, commands, keys)
-	logic.Run()
+	logic.Init(data, io.ProcessCommand, keys, quit)
+	go logic.Run()
+	<-quit
 }

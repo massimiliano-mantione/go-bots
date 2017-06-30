@@ -90,6 +90,7 @@ func waitBeginOrQuit(start int) {
 		select {
 		case d := <-data:
 			now = d.Millis
+			c.Millis = now
 			speed(0, 0)
 			ledsFromData(d)
 			cmd()
@@ -112,6 +113,7 @@ func pauseBeforeBegin(start int) {
 		select {
 		case d := <-data:
 			now = d.Millis
+			c.Millis = now
 			elapsed := now - start
 			if elapsed >= startTime {
 				go begin(now)
@@ -140,6 +142,7 @@ func begin(start int) {
 		select {
 		case d := <-data:
 			now = d.Millis
+			c.Millis = now
 			elapsed := now - start
 			if elapsed >= 3000 {
 				quit <- true
