@@ -6,8 +6,9 @@ import (
 	"go-bots/xl4/logic"
 )
 
-var data chan logic.Data = make(chan logic.Data)
-var keys chan ui.Key = make(chan ui.Key)
+var data = make(chan logic.Data)
+var keys = make(chan ui.Key)
+var quit = make(chan bool)
 
 func main() {
 	io.Init(data)
@@ -18,6 +19,7 @@ func main() {
 	defer ui.Close()
 	go ui.Loop()
 
-	logic.Init(data, io.ProcessCommand, keys)
-	logic.Run()
+	logic.Init(data, io.ProcessCommand, keys, quit)
+	go logic.Run()
+	<-quit
 }

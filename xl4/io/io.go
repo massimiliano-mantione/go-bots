@@ -164,7 +164,7 @@ func Loop() {
 		irR.Sync()
 		irL.Sync()
 
-		vision.Process(millis, irR.Value, irL.Value)
+		vision.Process(millis, irL.Value, irR.Value)
 
 		data <- logic.Data{
 			Start:            start,

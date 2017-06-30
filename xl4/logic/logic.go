@@ -1,14 +1,11 @@
 package logic
 
 import (
-	"fmt"
-	"go-bots/ev3"
 	"go-bots/ui"
-	"log"
-	"os"
 	"time"
 )
 
+// Data contains readings from sensors (adjusted for logic)
 type Data struct {
 	Start            time.Time
 	Millis           int
@@ -20,6 +17,13 @@ type Data struct {
 	VisionAngle      int
 }
 
+// VisionIntensityMax is the maximum vision intensity
+const VisionIntensityMax = 100
+
+// VisionAngleMax is the maximum vision angle (positive on the right)
+const VisionAngleMax = 100
+
+// Commands contains commands for motors and leds
 type Commands struct {
 	Millis        int
 	SpeedRight    int
@@ -33,73 +37,127 @@ type Commands struct {
 var data <-chan Data
 var commandProcessor func(*Commands)
 var keys <-chan ui.Key
+var quit chan<- bool
 
-func Init(d <-chan Data, c func(*Commands), k <-chan ui.Key) {
+// Init initializes the logic module
+func Init(d <-chan Data, c func(*Commands), k <-chan ui.Key, q chan<- bool) {
 	data = d
 	commandProcessor = c
 	keys = k
+	quit = q
 }
 
-func Run() {
-	c := Commands{}
-	const fastSpeed = 10000
-	const backSpeed = -10000
+var c = Commands{}
 
+func cmd() {
+	commandProcessor(&c)
+}
+
+func speed(left int, right int) {
+	c.SpeedLeft = left
+	c.SpeedRight = right
+}
+
+func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
+	c.LedLeftGreen = leftGreen
+	c.LedRightGreen = rightGreen
+	c.LedLeftRed = leftRed
+	c.LedRightRed = rightRed
+}
+
+func ledsFromData(d Data) {
+	c.LedLeftGreen = 255 * d.VisionIntensity * ((VisionAngleMax - d.VisionAngle) / 2) / (VisionIntensityMax * VisionAngleMax)
+	c.LedRightGreen = 255 * d.VisionIntensity * ((VisionAngleMax + d.VisionAngle) / 2) / (VisionIntensityMax * VisionAngleMax)
+	if d.CornerLeftIsOut {
+		c.LedLeftRed = 255
+	} else {
+		c.LedLeftRed = 0
+	}
+	if d.CornerRightIsOut {
+		c.LedRightRed = 255
+	} else {
+		c.LedRightRed = 0
+	}
+}
+
+const maxSpeed = 10000
+
+const startTime = 5000
+
+func waitBeginOrQuit(start int) {
+	now := start
 	for {
 		select {
 		case d := <-data:
-			c.Millis = d.Millis
-			if d.CornerRightIsOut {
-				if c.SpeedRight > 0 {
-					c.SpeedRight = backSpeed
-				}
-				if c.SpeedLeft > 0 {
-					c.SpeedLeft = backSpeed
-				}
-				c.LedRightRed = 255
-			} else if d.CornerLeftIsOut {
-				if c.SpeedRight > 0 {
-					c.SpeedRight = backSpeed
-				}
-				if c.SpeedLeft > 0 {
-					c.SpeedLeft = backSpeed
-				}
-				c.LedLeftRed = 255
-			} else {
-				c.LedRightRed = 0
-				c.LedLeftRed = 0
-			}
-
-			now := time.Now()
-			// millis := ev3.TimespanAsMillis(start, t)
-			millis := ev3.TimespanAsMillis(d.Start, now)
-			fmt.Fprintln(os.Stderr, "DATA", c.Millis, millis, d.CornerLeftIsOut, d.CornerLeft, d.CornerRightIsOut, d.CornerRight, c.SpeedLeft, c.SpeedRight)
-
-			commandProcessor(&c)
+			now = d.Millis
+			speed(0, 0)
+			ledsFromData(d)
+			cmd()
 		case k := <-keys:
-			switch k {
-			case ui.Up:
-				c.SpeedRight = fastSpeed
-				c.SpeedLeft = fastSpeed
-			case ui.Down:
-				c.SpeedRight = -fastSpeed
-				c.SpeedLeft = -fastSpeed
-			case ui.Right:
-				c.SpeedRight = -fastSpeed
-				c.SpeedLeft = fastSpeed
-			case ui.Left:
-				c.SpeedRight = fastSpeed
-				c.SpeedLeft = -fastSpeed
-			case ui.Enter:
-				c.SpeedRight = 0
-				c.SpeedLeft = 0
-			case ui.Quit:
-				log.Println("Logic got clean quit (kill)")
+			if k == ui.Quit || k == ui.Back {
+				quit <- true
 				return
-			case ui.Back:
-				log.Println("Logic got clean quit (back)")
+			}
+			if k == ui.Enter {
+				go pauseBeforeBegin(now)
 				return
 			}
 		}
 	}
+}
+
+func pauseBeforeBegin(start int) {
+	now := start
+	for {
+		select {
+		case d := <-data:
+			now = d.Millis
+			elapsed := now - start
+			if elapsed >= startTime {
+				go begin(now)
+				return
+			}
+			speed(0, 0)
+			intensity := ((elapsed % 1000) * 255) / (startTime / 5)
+			if elapsed > (startTime * 4 / 5) {
+				leds(intensity, intensity, intensity, intensity)
+			} else {
+				leds(0, 0, intensity, intensity)
+			}
+			cmd()
+		case k := <-keys:
+			if k == ui.Quit || k == ui.Back {
+				quit <- true
+				return
+			}
+		}
+	}
+}
+
+func begin(start int) {
+	now := start
+	for {
+		select {
+		case d := <-data:
+			now = d.Millis
+			elapsed := now - start
+			if elapsed >= 3000 {
+				quit <- true
+				return
+			}
+			speed(maxSpeed, maxSpeed)
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			if k == ui.Quit || k == ui.Back {
+				quit <- true
+				return
+			}
+		}
+	}
+}
+
+// Run starts the logic module
+func Run() {
+	go waitBeginOrQuit(0)
 }
