@@ -7,7 +7,7 @@ import (
 )
 
 var data = make(chan logic.Data)
-var keys = make(chan ui.Key)
+var keys = make(chan ui.KeyEvent)
 var quit = make(chan bool)
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 	defer io.Close()
 	go io.Loop()
 
-	ui.Init(keys)
+	ui.Init(keys, io.StartTime())
 	defer ui.Close()
 	go ui.Loop()
 

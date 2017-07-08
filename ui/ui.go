@@ -1,12 +1,22 @@
 package ui
 
-import t "github.com/gizak/termui"
-import "log"
-import "golang.org/x/crypto/ssh/terminal"
-import "time"
+import (
+	"go-bots/ev3"
+	"log"
+	"time"
 
-// Key represent keyboard events
+	t "github.com/gizak/termui"
+	"golang.org/x/crypto/ssh/terminal"
+)
+
+// Key represents keyboard keys
 type Key int
+
+// KeyEvent represents keyboard events
+type KeyEvent struct {
+	Key    Key
+	Millis int
+}
 
 const (
 	// None is the empty input event (likely never needed)
@@ -27,15 +37,17 @@ const (
 	Quit
 )
 
-var keys chan<- Key
+var keys chan<- KeyEvent
 var state *terminal.State
 
 var lastEnterTime time.Time
+var start time.Time
 
 // Init initializes the terminal
-func Init(k chan<- Key) {
+func Init(k chan<- KeyEvent, s time.Time) {
 	var err error
 	keys = k
+	start = s
 	state, err = terminal.GetState(0)
 	if err != nil {
 		log.Fatalln("Error getting terminal state:", err)
@@ -53,6 +65,15 @@ func Close() {
 	t.SendCustomEvt(quitEvent, nil)
 }
 
+func keyEvent(k Key) KeyEvent {
+	now := time.Now()
+	millis := ev3.TimespanAsMillis(start, now)
+	return KeyEvent{
+		Key:    k,
+		Millis: millis,
+	}
+}
+
 // Loop runs the ui loop, writing events to the channel
 func Loop() {
 	err := t.Init()
@@ -62,36 +83,36 @@ func Loop() {
 	defer t.Close()
 
 	t.Handle(quitEvent, func(t.Event) {
-		keys <- Quit
+		keys <- keyEvent(Quit)
 		t.StopLoop()
 	})
 	t.Handle("/sys/kbd/C-c", func(t.Event) {
-		keys <- Quit
+		keys <- keyEvent(Quit)
 		t.StopLoop()
 	})
 	t.Handle("/sys/kbd/<up>", func(t.Event) {
-		keys <- Up
+		keys <- keyEvent(Up)
 	})
 	t.Handle("/sys/kbd/<down>", func(t.Event) {
-		keys <- Down
+		keys <- keyEvent(Down)
 	})
 	t.Handle("/sys/kbd/<right>", func(t.Event) {
-		keys <- Right
+		keys <- keyEvent(Right)
 	})
 	t.Handle("/sys/kbd/<left>", func(t.Event) {
-		keys <- Left
+		keys <- keyEvent(Left)
 	})
 	t.Handle("/sys/kbd/<enter>", func(t.Event) {
 		lastEnterTime = time.Now()
-		keys <- Enter
+		keys <- keyEvent(Enter)
 	})
 	t.Handle("/sys/kbd/C-8", func(t.Event) {
 		backTime := time.Now()
 		interval := backTime.Sub(lastEnterTime)
 		if interval < time.Millisecond*400 {
-			keys <- Quit
+			keys <- keyEvent(Quit)
 		} else {
-			keys <- Back
+			keys <- keyEvent(Back)
 		}
 	})
 

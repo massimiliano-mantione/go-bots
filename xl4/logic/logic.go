@@ -36,11 +36,11 @@ type Commands struct {
 
 var data <-chan Data
 var commandProcessor func(*Commands)
-var keys <-chan ui.Key
+var keys <-chan ui.KeyEvent
 var quit chan<- bool
 
 // Init initializes the logic module
-func Init(d <-chan Data, c func(*Commands), k <-chan ui.Key, q chan<- bool) {
+func Init(d <-chan Data, c func(*Commands), k <-chan ui.KeyEvent, q chan<- bool) {
 	data = d
 	commandProcessor = c
 	keys = k
@@ -96,11 +96,11 @@ func waitBeginOrQuit(start int) {
 
 			cmd()
 		case k := <-keys:
-			if k == ui.Quit || k == ui.Back {
+			if k.Key == ui.Quit || k.Key == ui.Back {
 				quit <- true
 				return
 			}
-			if k == ui.Enter {
+			if k.Key == ui.Enter {
 				go pauseBeforeBegin(now)
 				return
 			}
@@ -129,7 +129,7 @@ func pauseBeforeBegin(start int) {
 			}
 			cmd()
 		case k := <-keys:
-			if k == ui.Quit || k == ui.Back {
+			if k.Key == ui.Quit || k.Key == ui.Back {
 				quit <- true
 				return
 			}
@@ -161,7 +161,7 @@ func begin(start int) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			if k == ui.Quit || k == ui.Back {
+			if k.Key == ui.Quit || k.Key == ui.Back {
 				quit <- true
 				return
 			}
