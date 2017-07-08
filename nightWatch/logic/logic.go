@@ -91,11 +91,10 @@ func ledsFromData(d Data) {
 const startTime = 5000
 
 func waitBeginOrQuit(start int) {
-	now := start
 	for {
 		select {
 		case d := <-data:
-			now = d.Millis
+			now := d.Millis
 			c.Millis = now
 			movement(0, 0)
 			ledsFromData(d)
@@ -106,7 +105,7 @@ func waitBeginOrQuit(start int) {
 				return
 			}
 			if k.Key == ui.Enter {
-				go pauseBeforeBegin(now)
+				go pauseBeforeBegin(k.Millis)
 				return
 			}
 		}
@@ -114,11 +113,10 @@ func waitBeginOrQuit(start int) {
 }
 
 func pauseBeforeBegin(start int) {
-	now := start
 	for {
 		select {
 		case d := <-data:
-			now = d.Millis
+			now := d.Millis
 			c.Millis = now
 			elapsed := now - start
 			if elapsed >= startTime {
@@ -143,13 +141,12 @@ func pauseBeforeBegin(start int) {
 }
 
 func begin(start int) {
-	now := start
 	speed := 0
 	direction := 0
 	for {
 		select {
 		case d := <-data:
-			now = d.Millis
+			now := d.Millis
 			c.Millis = now
 			elapsed := now - start
 			if elapsed >= 3000 {
