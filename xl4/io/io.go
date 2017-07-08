@@ -1,11 +1,9 @@
 package io
 
 import (
-	"fmt"
 	"go-bots/ev3"
 	"go-bots/xl4/logic"
 	"go-bots/xl4/vision"
-	"os"
 	"time"
 )
 
@@ -48,13 +46,13 @@ func Init(d chan<- logic.Data) {
 	// Color right
 	ev3.CheckDriver(devs.In4, ev3.DriverColor, ev3.In4)
 
-	// Left back inverted
+	// Right back inverted
 	ev3.CheckDriver(devs.OutA, ev3.DriverRcxMotor, ev3.OutA)
-	// Left front direct
-	ev3.CheckDriver(devs.OutB, ev3.DriverRcxMotor, ev3.OutB)
 	// Right front direct
+	ev3.CheckDriver(devs.OutB, ev3.DriverRcxMotor, ev3.OutB)
+	// Left front direct
 	ev3.CheckDriver(devs.OutC, ev3.DriverRcxMotor, ev3.OutC)
-	// Right back direct
+	// Left back direct
 	ev3.CheckDriver(devs.OutD, ev3.DriverRcxMotor, ev3.OutD)
 
 	ev3.SetMode(devs.In1, ev3.IrModeProx)
@@ -71,10 +69,10 @@ func Init(d chan<- logic.Data) {
 	irL = ev3.OpenByteR(devs.In1, ev3.BinData)
 	colR = ev3.OpenByteR(devs.In4, ev3.BinData)
 	colL = ev3.OpenByteR(devs.In2, ev3.BinData)
-	mr1 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
-	mr2 = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
-	ml1 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
-	ml2 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
+	mr2 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
+	mr1 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
+	ml1 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	ml2 = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
 
 	ledLG = ev3.OpenTextW(devs.LedLeftGreen, ev3.Brightness)
 	ledLR = ev3.OpenTextW(devs.LedLeftRed, ev3.Brightness)
@@ -134,12 +132,10 @@ func ProcessCommand(c *logic.Commands) {
 	speedLeft = computeSpeed(speedLeft, c.SpeedLeft, millis)
 	lastMillis = currentMillis
 
-	fmt.Fprintln(os.Stderr, " CMD", c.Millis, speedLeft, speedRight)
-
 	mr1.Value = speedRight / 100
-	mr2.Value = speedRight / 100
+	mr2.Value = -speedRight / 100
 	ml1.Value = speedLeft / 100
-	ml2.Value = -speedLeft / 100
+	ml2.Value = speedLeft / 100
 	mr1.Sync()
 	mr2.Sync()
 	ml1.Sync()

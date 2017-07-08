@@ -1,15 +1,37 @@
 package vision
 
-import "go-bots/xl4/logic"
+import (
+	"fmt"
+	"go-bots/xl4/logic"
+	"os"
+)
 
 const maxIrValue = 100
 const maxIrDistance = 100
+
+var lastSecond = 0
+var lastSecondChanged = false
+
+func detectLastSecond(now int, lastSecond int) (int, bool) {
+	lastSecondChanged := false
+	if now%1000 != lastSecond {
+		lastSecond = now % 1000
+		lastSecondChanged = true
+	}
+	return lastSecond, lastSecondChanged
+}
 
 // Process processes IR input values into vision data
 func Process(millis int, leftValue int, rightValue int) (intensity int, angle int) {
 	intensity = 0
 	angle = 0
 	if leftValue >= maxIrDistance && rightValue >= maxIrDistance {
+
+		lastSecond, lastSecondChanged = detectLastSecond(millis, lastSecond)
+		if lastSecondChanged {
+			fmt.Fprintln(os.Stderr, "DATA EMPTY")
+		}
+
 		return
 	}
 	intensityLeft := (maxIrValue - leftValue) * logic.VisionIntensityMax / maxIrValue
@@ -31,5 +53,11 @@ func Process(millis int, leftValue int, rightValue int) (intensity int, angle in
 	} else {
 		angle = (intensityRight - intensityLeft) / 2
 	}
+
+	lastSecond, lastSecondChanged = detectLastSecond(millis, lastSecond)
+	if lastSecondChanged {
+		fmt.Fprintln(os.Stderr, "DATA", leftValue, rightValue, intensity, angle)
+	}
+
 	return
 }

@@ -82,7 +82,7 @@ func ledsFromData(d Data) {
 
 const maxSpeed = 10000
 
-const startTime = 5000
+const startTime = 50
 
 func waitBeginOrQuit(start int) {
 	now := start
@@ -93,6 +93,7 @@ func waitBeginOrQuit(start int) {
 			c.Millis = now
 			speed(0, 0)
 			ledsFromData(d)
+
 			cmd()
 		case k := <-keys:
 			if k == ui.Quit || k == ui.Back {
@@ -136,6 +137,10 @@ func pauseBeforeBegin(start int) {
 	}
 }
 
+const outerSpeed = maxSpeed
+const innerSpeed = 4200
+const adjustInnerMax = 200
+
 func begin(start int) {
 	now := start
 	for {
@@ -144,11 +149,15 @@ func begin(start int) {
 			now = d.Millis
 			c.Millis = now
 			elapsed := now - start
-			if elapsed >= 3000 {
+
+			adjustInner := d.CornerLeft * adjustInnerMax / 100
+			inner := innerSpeed - adjustInner
+
+			if elapsed >= 5000 {
 				quit <- true
 				return
 			}
-			speed(maxSpeed, maxSpeed)
+			speed(outerSpeed, inner)
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
