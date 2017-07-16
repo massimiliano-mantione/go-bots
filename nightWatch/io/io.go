@@ -28,9 +28,10 @@ func StartTime() time.Time {
 }
 
 // Init initializes the io module
-func Init(d chan<- logic.Data) {
+func Init(d chan<- logic.Data, s time.Time) {
 	devs = ev3.Scan(nil)
 	data = d
+	start = s
 
 	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
 	ev3.CheckDriver(devs.In2, ev3.DriverIr, ev3.In2)
@@ -204,7 +205,6 @@ func ProcessCommand(c *logic.Commands) {
 
 // Loop contains the io loop
 func Loop() {
-	start = time.Now()
 	for {
 		now := time.Now()
 		millis := ev3.TimespanAsMillis(start, now)
