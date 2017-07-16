@@ -2,6 +2,7 @@ package logic
 
 import (
 	"go-bots/ui"
+	"go-bots/xl4/config"
 	"time"
 )
 
@@ -16,12 +17,6 @@ type Data struct {
 	VisionIntensity  int
 	VisionAngle      int
 }
-
-// VisionIntensityMax is the maximum vision intensity
-const VisionIntensityMax = 100
-
-// VisionAngleMax is the maximum vision angle (positive on the right)
-const VisionAngleMax = 100
 
 // Commands contains commands for motors and leds
 type Commands struct {
@@ -66,8 +61,8 @@ func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
 }
 
 func ledsFromData(d Data) {
-	c.LedLeftGreen = 255 * d.VisionIntensity * ((VisionAngleMax - d.VisionAngle) / 2) / (VisionIntensityMax * VisionAngleMax)
-	c.LedRightGreen = 255 * d.VisionIntensity * ((VisionAngleMax + d.VisionAngle) / 2) / (VisionIntensityMax * VisionAngleMax)
+	c.LedLeftGreen = 255 * d.VisionIntensity * ((config.VisionAngleMax - d.VisionAngle) / 2) / (config.VisionIntensityMax * config.VisionAngleMax)
+	c.LedRightGreen = 255 * d.VisionIntensity * ((config.VisionAngleMax + d.VisionAngle) / 2) / (config.VisionIntensityMax * config.VisionAngleMax)
 	if d.CornerLeftIsOut {
 		c.LedLeftRed = 255
 	} else {
@@ -79,10 +74,6 @@ func ledsFromData(d Data) {
 		c.LedRightRed = 0
 	}
 }
-
-const maxSpeed = 10000
-
-const startTime = 50
 
 func waitBeginOrQuit(start int) {
 	for {
@@ -114,13 +105,13 @@ func pauseBeforeBegin(start int) {
 			now := d.Millis
 			c.Millis = now
 			elapsed := now - start
-			if elapsed >= startTime {
+			if elapsed >= config.StartTime {
 				go begin(now)
 				return
 			}
 			speed(0, 0)
-			intensity := ((elapsed % 1000) * 255) / (startTime / 5)
-			if elapsed > (startTime * 4 / 5) {
+			intensity := ((elapsed % 1000) * 255) / (config.StartTime / 5)
+			if elapsed > (config.StartTime * 4 / 5) {
 				leds(intensity, intensity, intensity, intensity)
 			} else {
 				leds(0, 0, intensity, intensity)
@@ -135,10 +126,6 @@ func pauseBeforeBegin(start int) {
 	}
 }
 
-const outerSpeed = maxSpeed
-const innerSpeed = 4200
-const adjustInnerMax = 200
-
 func begin(start int) {
 	for {
 		select {
@@ -147,14 +134,14 @@ func begin(start int) {
 			c.Millis = now
 			elapsed := now - start
 
-			adjustInner := d.CornerLeft * adjustInnerMax / 100
-			inner := innerSpeed - adjustInner
+			adjustInner := d.CornerLeft * config.AdjustInnerMax / 100
+			inner := config.InnerSpeed - adjustInner
 
 			if elapsed >= 5000 {
 				quit <- true
 				return
 			}
-			speed(outerSpeed, inner)
+			speed(config.OuterSpeed, inner)
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:

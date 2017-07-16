@@ -2,6 +2,7 @@ package io
 
 import (
 	"go-bots/ev3"
+	"go-bots/xl4/config"
 	"go-bots/xl4/logic"
 	"go-bots/xl4/vision"
 	"time"
@@ -28,7 +29,7 @@ func StartTime() time.Time {
 }
 
 // Init initializes the io module
-func Init(d chan<- logic.Data) {
+func Init(d chan<- logic.Data, s time.Time) {
 	devs = ev3.Scan(&ev3.OutPortModes{
 		OutA: ev3.OutPortModeDcMotor,
 		OutB: ev3.OutPortModeDcMotor,
@@ -36,6 +37,7 @@ func Init(d chan<- logic.Data) {
 		OutD: ev3.OutPortModeDcMotor,
 	})
 	data = d
+	start = s
 
 	// IR left
 	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
@@ -103,18 +105,15 @@ func Init(d chan<- logic.Data) {
 	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
 }
 
-const forwardAcceleration = 10000 / 400
-const reverseAcceleration = 10000 / 1
-
 func computeSpeed(currentSpeed int, targetSpeed int, millis int) int {
 	if currentSpeed < targetSpeed {
-		currentSpeed += (forwardAcceleration * millis)
+		currentSpeed += (config.ForwardAcceleration * millis)
 		if currentSpeed > targetSpeed {
 			currentSpeed = targetSpeed
 		}
 	}
 	if currentSpeed > targetSpeed {
-		currentSpeed -= (reverseAcceleration * millis)
+		currentSpeed -= (config.ReverseAcceleration * millis)
 		if currentSpeed < targetSpeed {
 			currentSpeed = targetSpeed
 		}
@@ -153,7 +152,6 @@ func ProcessCommand(c *logic.Commands) {
 
 // Loop contains the io loop
 func Loop() {
-	start = time.Now()
 	for {
 		now := time.Now()
 		millis := ev3.TimespanAsMillis(start, now)

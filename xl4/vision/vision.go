@@ -2,12 +2,9 @@ package vision
 
 import (
 	"fmt"
-	"go-bots/xl4/logic"
+	"go-bots/xl4/config"
 	"os"
 )
-
-const maxIrValue = 100
-const maxIrDistance = 100
 
 var lastSecond = 0
 var lastSecondChanged = false
@@ -25,7 +22,7 @@ func detectLastSecond(now int, lastSecond int) (int, bool) {
 func Process(millis int, leftValue int, rightValue int) (intensity int, angle int) {
 	intensity = 0
 	angle = 0
-	if leftValue >= maxIrDistance && rightValue >= maxIrDistance {
+	if leftValue >= config.MaxIrDistance && rightValue >= config.MaxIrDistance {
 
 		lastSecond, lastSecondChanged = detectLastSecond(millis, lastSecond)
 		if lastSecondChanged {
@@ -34,21 +31,21 @@ func Process(millis int, leftValue int, rightValue int) (intensity int, angle in
 
 		return
 	}
-	intensityLeft := (maxIrValue - leftValue) * logic.VisionIntensityMax / maxIrValue
-	intensityRight := (maxIrValue - rightValue) * logic.VisionIntensityMax / maxIrValue
+	intensityLeft := (config.MaxIrValue - leftValue) * config.VisionIntensityMax / config.MaxIrValue
+	intensityRight := (config.MaxIrValue - rightValue) * config.VisionIntensityMax / config.MaxIrValue
 	if intensityRight > intensityLeft {
 		intensity = intensityRight
 	} else {
 		intensity = intensityLeft
 	}
 	if intensityLeft == 0 {
-		angle = (logic.VisionIntensityMax - intensityRight) * logic.VisionAngleMax / logic.VisionIntensityMax
+		angle = (config.VisionIntensityMax - intensityRight) * config.VisionAngleMax / config.VisionIntensityMax
 		angle /= 2
-		angle += logic.VisionAngleMax / 2
+		angle += config.VisionAngleMax / 2
 	} else if intensityRight == 0 {
-		angle = (logic.VisionIntensityMax - intensityLeft) * logic.VisionAngleMax / logic.VisionIntensityMax
+		angle = (config.VisionIntensityMax - intensityLeft) * config.VisionAngleMax / config.VisionIntensityMax
 		angle /= 2
-		angle += logic.VisionAngleMax / 2
+		angle += config.VisionAngleMax / 2
 		angle = -angle
 	} else {
 		angle = (intensityRight - intensityLeft) / 2
