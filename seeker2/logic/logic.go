@@ -1,7 +1,9 @@
 package logic
 
 import (
+	"fmt"
 	"go-bots/ui"
+	"os"
 	"time"
 )
 
@@ -25,8 +27,8 @@ const VisionAngleMax = 100
 
 // SpeedMax is the maximum speed
 const SpeedMax = 10000
-const SpeedReverse = 5000
-const SpeedTurning = 5000
+const SpeedReverse = 7000
+const SpeedTurning = 7000
 
 // AngleMax is the maximum turning angle (positive on the right)
 const AngleMax = 100
@@ -99,6 +101,9 @@ func ledsFromData(d Data) {
 const startTime = 50
 
 func waitBeginOrQuit(start int) {
+
+	fmt.Fprintln(os.Stderr, "waitBeginOrQuit")
+
 	for {
 		select {
 		case d := <-data:
@@ -121,12 +126,18 @@ func waitBeginOrQuit(start int) {
 }
 
 func pauseBeforeBegin(start int) {
+
+	fmt.Fprintln(os.Stderr, "pauseBeforeBegin")
+
 	for {
 		select {
 		case d := <-data:
 			now := d.Millis
 			c.Millis = now
 			elapsed := now - start
+
+			fmt.Fprintln(os.Stderr, "pauseBeforeBegin", start, now, elapsed)
+
 			if elapsed >= startTime {
 				go begin(now)
 				return
@@ -149,6 +160,9 @@ func pauseBeforeBegin(start int) {
 }
 
 func begin(start int) {
+
+	fmt.Fprintln(os.Stderr, "begin")
+
 	speedL := 0
 	speedR := 0
 	for {

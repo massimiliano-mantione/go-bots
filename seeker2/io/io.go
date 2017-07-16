@@ -28,7 +28,7 @@ func StartTime() time.Time {
 }
 
 // Init initializes the io module
-func Init(d chan<- logic.Data) {
+func Init(d chan<- logic.Data, s time.Time) {
 	devs = ev3.Scan(&ev3.OutPortModes{
 		OutA: ev3.OutPortModeAuto,
 		OutB: ev3.OutPortModeAuto,
@@ -36,6 +36,7 @@ func Init(d chan<- logic.Data) {
 		OutD: ev3.OutPortModeDcMotor,
 	})
 	data = d
+	start = s
 
 	// ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
 	// ev3.CheckDriver(devs.In2, ev3.DriverIr, ev3.In2)
@@ -46,9 +47,9 @@ func Init(d chan<- logic.Data) {
 	ev3.CheckDriver(devs.OutA, ev3.DriverTachoMotorMedium, ev3.OutA)
 	// B eyes
 	// ev3.CheckDriver(devs.OutB, ev3.DriverTachoMotorMedium, ev3.OutB)
-	// C left inverted
+	// C right direct
 	ev3.CheckDriver(devs.OutC, ev3.DriverRcxMotor, ev3.OutC)
-	// D right direct
+	// D left inverted
 	ev3.CheckDriver(devs.OutD, ev3.DriverRcxMotor, ev3.OutD)
 
 	// ev3.SetMode(devs.In1, ev3.IrModeProx)
@@ -65,10 +66,10 @@ func Init(d chan<- logic.Data) {
 	// irL = ev3.OpenByteR(devs.In2, ev3.BinData)
 	// colR = ev3.OpenByteR(devs.In3, ev3.BinData)
 	// colL = ev3.OpenByteR(devs.In4, ev3.BinData)
-	// D right direct
-	mr = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
-	// C left inverted
-	ml = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	// C right direct
+	mr = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	// D left inverted
+	ml = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
 	// B eyes
 	// dme = devs.OutB
 	// pme = ev3.OpenTextR(devs.OutB, ev3.Position)
@@ -169,7 +170,6 @@ func ProcessCommand(c *logic.Commands) {
 
 // Loop contains the io loop
 func Loop() {
-	start = time.Now()
 	for {
 		now := time.Now()
 		millis := ev3.TimespanAsMillis(start, now)
