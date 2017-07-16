@@ -600,3 +600,20 @@ func DurationToMillis(d time.Duration) int {
 func TimespanAsMillis(start time.Time, end time.Time) int {
 	return DurationToMillis(end.Sub(start))
 }
+
+// Direction represents left or right
+type Direction int
+
+const (
+	// None means no direction
+	None Direction = 0
+	// Left direction
+	Left = -1
+	// Right direction
+	Right = 1
+)
+
+// ChangeDirection returns the opposite direction
+func ChangeDirection(d Direction) Direction {
+	return -d
+}
