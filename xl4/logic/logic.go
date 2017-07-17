@@ -1,8 +1,11 @@
 package logic
 
 import (
+	"fmt"
+	"go-bots/ev3"
 	"go-bots/ui"
 	"go-bots/xl4/config"
+	"os"
 	"time"
 )
 
@@ -48,6 +51,13 @@ func cmd() {
 	commandProcessor(&c)
 }
 
+func handleTime(d Data, start int) (now int, elapsed int) {
+	now = d.Millis
+	c.Millis = now
+	elapsed = now - start
+	return
+}
+
 func speed(left int, right int) {
 	c.SpeedLeft = left
 	c.SpeedRight = right
@@ -75,6 +85,13 @@ func ledsFromData(d Data) {
 	}
 }
 
+func checkEnd(k ui.KeyEvent) {
+	if k.Key == ui.Quit || k.Key == ui.Back {
+		quit <- true
+		return
+	}
+}
+
 func waitBeginOrQuit(start int) {
 	for {
 		select {
@@ -86,10 +103,7 @@ func waitBeginOrQuit(start int) {
 
 			cmd()
 		case k := <-keys:
-			if k.Key == ui.Quit || k.Key == ui.Back {
-				quit <- true
-				return
-			}
+			checkEnd(k)
 			if k.Key == ui.Enter {
 				go pauseBeforeBegin(k.Millis)
 				return
@@ -118,15 +132,12 @@ func pauseBeforeBegin(start int) {
 			}
 			cmd()
 		case k := <-keys:
-			if k.Key == ui.Quit || k.Key == ui.Back {
-				quit <- true
-				return
-			}
+			checkEnd(k)
 		}
 	}
 }
 
-func begin(start int) {
+func circle(start int) {
 	for {
 		select {
 		case d := <-data:
@@ -145,12 +156,130 @@ func begin(start int) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			if k.Key == ui.Quit || k.Key == ui.Back {
-				quit <- true
-				return
-			}
+			checkEnd(k)
 		}
 	}
+}
+
+func checkVision(d Data) bool {
+	return false
+}
+
+func checkBorder(d Data, now int) bool {
+	if d.CornerLeftIsOut {
+		if d.CornerRightIsOut {
+			go back(now, ev3.NoDirection)
+			return true
+		}
+		go back(now, ev3.Left)
+		return true
+	}
+	if d.CornerRightIsOut {
+		if d.CornerLeftIsOut {
+			go back(now, ev3.NoDirection)
+			return true
+		}
+		go back(now, ev3.Right)
+		return true
+	}
+	return false
+}
+
+func seekMove(start int, dir ev3.Direction, leftSpeed int, rightSpeed int, duration int, ignoreBorder bool) (done bool, now int) {
+
+	fmt.Fprintln(os.Stderr, "seekMove", dir, leftSpeed, rightSpeed, duration)
+
+	for {
+		select {
+		case d := <-data:
+			now, elapsed := handleTime(d, start)
+			if elapsed >= duration {
+
+				fmt.Fprintln(os.Stderr, "seekMove elapsed", now, duration)
+
+				return false, now
+			}
+
+			if checkVision(d) {
+				return true, now
+			}
+			if (!ignoreBorder) && checkBorder(d, now) {
+				return true, now
+			}
+
+			speed(leftSpeed, rightSpeed)
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+}
+
+func back(start int, dir ev3.Direction) {
+
+	done, now := false, start
+	fmt.Fprintln(os.Stderr, "BACK", dir)
+
+	if dir == ev3.Right {
+		done, now = seekMove(now, dir, -config.BackTurn1SpeedInner, -config.BackTurn1SpeedOuter, config.BackTurn1Millis, true)
+		if done {
+			return
+		}
+		done, now = seekMove(now, dir, config.BackTurn2Speed, -config.BackTurn2Speed, config.BackTurn2Millis, true)
+		if done {
+			return
+		}
+	} else if dir == ev3.Left {
+		done, now = seekMove(now, dir, -config.BackTurn1SpeedOuter, -config.BackTurn1SpeedInner, config.BackTurn1Millis, true)
+		if done {
+			return
+		}
+		done, now = seekMove(now, dir, -config.BackTurn2Speed, config.BackTurn2Speed, config.BackTurn2Millis, true)
+		if done {
+			return
+		}
+	} else {
+		dir = ev3.Right
+		done, now = seekMove(now, dir, -config.BackMoveSpeed, -config.BackMoveSpeed, config.BackMoveMillis, true)
+		if done {
+			return
+		}
+		done, now = seekMove(now, dir, config.BackTurn2Speed, -config.BackTurn2Speed, config.BackTurn2Millis, true)
+		if done {
+			return
+		}
+	}
+
+	go seek(now, dir)
+}
+
+func seek(start int, dir ev3.Direction) {
+
+	fmt.Fprintln(os.Stderr, "SEEK", dir)
+
+	done, now := false, start
+	for {
+
+		fmt.Fprintln(os.Stderr, "SEEK MOVE", dir, now)
+
+		done, now = seekMove(now, dir, config.SeekMoveSpeed, config.SeekMoveSpeed, config.SeekMoveMillis, false)
+		if done {
+			return
+		}
+
+		fmt.Fprintln(os.Stderr, "SEEK TURN", dir, now)
+
+		done, now = seekMove(now, dir, config.SeekTurnSpeed*ev3.LeftTurnVersor(dir), config.SeekTurnSpeed*ev3.RightTurnVersor(dir), config.SeekTurnMillis, false)
+		if done {
+			return
+		}
+		dir = ev3.ChangeDirection(dir)
+	}
+}
+
+func begin(start int) {
+	seek(start, ev3.Right)
 }
 
 // Run starts the logic module

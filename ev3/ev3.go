@@ -605,8 +605,8 @@ func TimespanAsMillis(start time.Time, end time.Time) int {
 type Direction int
 
 const (
-	// None means no direction
-	None Direction = 0
+	// NoDirection means no direction
+	NoDirection Direction = 0
 	// Left direction
 	Left = -1
 	// Right direction
@@ -614,6 +614,16 @@ const (
 )
 
 // ChangeDirection returns the opposite direction
-func ChangeDirection(d Direction) Direction {
-	return -d
+func ChangeDirection(dir Direction) Direction {
+	return -dir
+}
+
+// LeftTurnVersor is the left turn speeed coefficient
+func LeftTurnVersor(dir Direction) int {
+	return int(dir)
+}
+
+// RightTurnVersor is the right turn speeed coefficient
+func RightTurnVersor(dir Direction) int {
+	return -int(dir)
 }

@@ -1,10 +1,6 @@
 package vision
 
-import (
-	"fmt"
-	"go-bots/xl4/config"
-	"os"
-)
+import "go-bots/xl4/config"
 
 var lastSecond = 0
 var lastSecondChanged = false
@@ -26,7 +22,7 @@ func Process(millis int, leftValue int, rightValue int) (intensity int, angle in
 
 		lastSecond, lastSecondChanged = detectLastSecond(millis, lastSecond)
 		if lastSecondChanged {
-			fmt.Fprintln(os.Stderr, "DATA EMPTY")
+			// fmt.Fprintln(os.Stderr, "DATA EMPTY")
 		}
 
 		return
@@ -53,7 +49,7 @@ func Process(millis int, leftValue int, rightValue int) (intensity int, angle in
 
 	lastSecond, lastSecondChanged = detectLastSecond(millis, lastSecond)
 	if lastSecondChanged {
-		fmt.Fprintln(os.Stderr, "DATA", leftValue, rightValue, intensity, angle)
+		// fmt.Fprintln(os.Stderr, "DATA", leftValue, rightValue, intensity, angle)
 	}
 
 	return
