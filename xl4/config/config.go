@@ -20,15 +20,17 @@ const OuterSpeed = MaxSpeed
 const InnerSpeed = 4200
 const AdjustInnerMax = 200
 
-const SeekMoveSpeed = 4000
-const SeekMoveMillis = 1000
+const SeekMoveSpeed = 3500
+const SeekMoveMillis = 860
 const SeekTurnSpeed = 4000
-const SeekTurnMillis = 1500
+const SeekTurnMillis = 1100
 
 const BackTurn1SpeedOuter = MaxSpeed
 const BackTurn1SpeedInner = MaxSpeed / 2
-const BackTurn1Millis = 500
+const BackTurn1Millis = 400
 const BackTurn2Speed = 4000
-const BackTurn2Millis = 1500
+const BackTurn2Millis = 300
 const BackMoveSpeed = MaxSpeed
 const BackMoveMillis = 500
+const BackTurn3Speed = 4000
+const BackTurn3Millis = 800

@@ -63,7 +63,21 @@ func speed(left int, right int) {
 	c.SpeedRight = right
 }
 
+func normalizeLedValue(v int) int {
+	if v < 255 {
+		v = 255
+	}
+	if v < 0 {
+		v = 0
+	}
+	return v
+}
+
 func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
+	leftGreen = normalizeLedValue(leftGreen)
+	rightGreen = normalizeLedValue(rightGreen)
+	leftRed = normalizeLedValue(leftRed)
+	rightRed = normalizeLedValue(rightRed)
 	c.LedLeftGreen = leftGreen
 	c.LedRightGreen = rightGreen
 	c.LedLeftRed = leftRed
@@ -245,7 +259,7 @@ func back(start int, dir ev3.Direction) {
 		if done {
 			return
 		}
-		done, now = seekMove(now, dir, config.BackTurn2Speed, -config.BackTurn2Speed, config.BackTurn2Millis, true)
+		done, now = seekMove(now, dir, config.BackTurn3Speed, -config.BackTurn3Speed, config.BackTurn3Millis, true)
 		if done {
 			return
 		}

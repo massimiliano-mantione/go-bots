@@ -144,10 +144,10 @@ func ProcessCommand(c *logic.Commands) {
 	ledLR.Value = c.LedLeftRed
 	ledRG.Value = c.LedRightGreen
 	ledRR.Value = c.LedRightRed
-	// ledLG.Sync()
-	// ledLR.Sync()
-	// ledRG.Sync()
-	// ledRR.Sync()
+	ledLG.Sync()
+	ledLR.Sync()
+	ledRG.Sync()
+	ledRR.Sync()
 }
 
 // Loop contains the io loop
