@@ -1,5 +1,7 @@
 package config
 
+const ColorIsOut = 10
+
 const ForwardAcceleration = 10000 / 400
 const ReverseAcceleration = 10000 / 1
 
@@ -16,10 +18,6 @@ const MaxSpeed = 10000
 
 const StartTime = 50
 
-const OuterSpeed = MaxSpeed
-const InnerSpeed = 4200
-const AdjustInnerMax = 200
-
 const SeekMoveSpeed = 3500
 const SeekMoveMillis = 860
 const SeekTurnSpeed = 4000
@@ -34,3 +32,16 @@ const BackMoveSpeed = MaxSpeed
 const BackMoveMillis = 500
 const BackTurn3Speed = 4000
 const BackTurn3Millis = 800
+
+const CircleFindBorderMillis = 90
+const CircleFindBorderOuterSpeed = MaxSpeed * 90 / 100
+const CircleFindBorderInnerSpeed = MaxSpeed * 50 / 100
+const CircleFindBorderOuterSpeedSlow = MaxSpeed * 30 / 100
+const CircleFindBorderInnerSpeedSlow = MaxSpeed * 20 / 100
+const CircleMillis = 150
+const CircleOuterSpeed = MaxSpeed
+const CircleInnerSpeed = 3600
+const CircleAdjustInnerMax = 300
+const CircleSpiralMillis = 20
+const CircleSpiralOuterSpeed = MaxSpeed
+const CircleSpiralInnerSpeed = 2500

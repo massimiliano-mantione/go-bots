@@ -107,6 +107,9 @@ func checkEnd(k ui.KeyEvent) {
 }
 
 func waitBeginOrQuit(start int) {
+	strategy := circle
+	var dir ev3.Direction = ev3.Left
+
 	for {
 		select {
 		case d := <-data:
@@ -119,14 +122,14 @@ func waitBeginOrQuit(start int) {
 		case k := <-keys:
 			checkEnd(k)
 			if k.Key == ui.Enter {
-				go pauseBeforeBegin(k.Millis)
+				go pauseBeforeBegin(k.Millis, strategy, dir)
 				return
 			}
 		}
 	}
 }
 
-func pauseBeforeBegin(start int) {
+func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Direction) {
 	for {
 		select {
 		case d := <-data:
@@ -134,7 +137,7 @@ func pauseBeforeBegin(start int) {
 			c.Millis = now
 			elapsed := now - start
 			if elapsed >= config.StartTime {
-				go begin(now)
+				go strategy(now, dir)
 				return
 			}
 			speed(0, 0)
@@ -144,30 +147,6 @@ func pauseBeforeBegin(start int) {
 			} else {
 				leds(0, 0, intensity, intensity)
 			}
-			cmd()
-		case k := <-keys:
-			checkEnd(k)
-		}
-	}
-}
-
-func circle(start int) {
-	for {
-		select {
-		case d := <-data:
-			now := d.Millis
-			c.Millis = now
-			elapsed := now - start
-
-			adjustInner := d.CornerLeft * config.AdjustInnerMax / 100
-			inner := config.InnerSpeed - adjustInner
-
-			if elapsed >= 5000 {
-				quit <- true
-				return
-			}
-			speed(config.OuterSpeed, inner)
-			ledsFromData(d)
 			cmd()
 		case k := <-keys:
 			checkEnd(k)
@@ -292,8 +271,100 @@ func seek(start int, dir ev3.Direction) {
 	}
 }
 
-func begin(start int) {
-	seek(start, ev3.Right)
+func circle(start int, dir ev3.Direction) {
+	now, elapsed := start, 0
+
+findBorder:
+	for {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+			if dir == ev3.Right {
+				if d.CornerRightIsOut {
+					break findBorder
+				}
+				if elapsed < config.CircleFindBorderMillis {
+					speed(config.CircleFindBorderOuterSpeed, -config.CircleFindBorderInnerSpeed)
+				} else {
+					speed(config.CircleFindBorderOuterSpeedSlow, -config.CircleFindBorderInnerSpeedSlow)
+				}
+			} else {
+				if d.CornerLeftIsOut {
+					break findBorder
+				}
+				if elapsed < config.CircleFindBorderMillis {
+					speed(-config.CircleFindBorderInnerSpeed, config.CircleFindBorderOuterSpeed)
+				} else {
+					speed(-config.CircleFindBorderInnerSpeedSlow, config.CircleFindBorderOuterSpeedSlow)
+				}
+			}
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+
+	dir = ev3.ChangeDirection(dir)
+	borderFoundTime := now
+	for elapsed-borderFoundTime < config.CircleMillis {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+
+			if checkVision(d) {
+				// FIXME: go track
+				return
+			}
+
+			var cornerValue int
+			if dir == ev3.Right {
+				cornerValue = d.CornerLeft
+			} else {
+				cornerValue = d.CornerRight
+			}
+
+			adjustInner := cornerValue * config.CircleAdjustInnerMax / 100
+			inner := config.CircleInnerSpeed - adjustInner
+
+			if dir == ev3.Right {
+				speed(config.CircleOuterSpeed, inner)
+			} else {
+				speed(inner, config.CircleOuterSpeed)
+			}
+
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+
+	circleDoneTime := now
+	for elapsed-circleDoneTime < config.CircleSpiralMillis {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+
+			if checkVision(d) {
+				// FIXME: go track
+				return
+			}
+
+			if dir == ev3.Right {
+				speed(config.CircleSpiralOuterSpeed, config.CircleSpiralInnerSpeed)
+			} else {
+				speed(config.CircleSpiralInnerSpeed, config.CircleSpiralOuterSpeed)
+			}
+
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+
+	go seek(now, ev3.ChangeDirection(dir))
 }
 
 // Run starts the logic module
