@@ -47,6 +47,19 @@ func Init(d <-chan Data, c func(*Commands), k <-chan ui.KeyEvent, q chan<- bool)
 
 var c = Commands{}
 
+func log(now int, dir ev3.Direction, msg string) {
+	dirString := ""
+	if dir == ev3.Left {
+		dirString = "LEFT"
+	} else if dir == ev3.Right {
+		dirString = "RIGHT"
+	} else {
+		dirString = "NONE"
+	}
+
+	fmt.Fprintln(os.Stderr, now, dirString, msg)
+}
+
 func cmd() {
 	commandProcessor(&c)
 }
@@ -64,7 +77,7 @@ func speed(left int, right int) {
 }
 
 func normalizeLedValue(v int) int {
-	if v < 255 {
+	if v > 255 {
 		v = 255
 	}
 	if v < 0 {
@@ -106,25 +119,66 @@ func checkEnd(k ui.KeyEvent) {
 	}
 }
 
-func waitBeginOrQuit(start int) {
-	strategy := turnBack
+func chooseStrategy(start int) {
+	strategy := seek
+	strategyIsGoForward := false
 	var dir ev3.Direction = ev3.Left
+	leds(0, 0, 0, 0)
+	speed(0, 0)
+	cmd()
 
 	for {
 		select {
 		case d := <-data:
 			now := d.Millis
 			c.Millis = now
-			speed(0, 0)
-			ledsFromData(d)
-
-			cmd()
 		case k := <-keys:
 			checkEnd(k)
 			if k.Key == ui.Enter {
 				go pauseBeforeBegin(k.Millis, strategy, dir)
 				return
+			} else if k.Key == ui.Left {
+				dir = ev3.Left
+				strategy = circle
+				strategyIsGoForward = false
+				leds(255, 0, 255, 0)
+				fmt.Fprintln(os.Stderr, "chooseStrategy circle left")
+			} else if k.Key == ui.Right {
+				dir = ev3.Right
+				strategy = circle
+				strategyIsGoForward = false
+				leds(0, 255, 0, 255)
+				fmt.Fprintln(os.Stderr, "chooseStrategy circle right")
+			} else if k.Key == ui.Up {
+				if strategyIsGoForward {
+					strategy = seek
+					strategyIsGoForward = false
+					leds(0, 0, 0, 0)
+					fmt.Fprintln(os.Stderr, "chooseStrategy seek")
+				} else {
+					strategy = goForward
+					strategyIsGoForward = true
+					if dir == ev3.Left {
+						leds(255, 0, 0, 0)
+						fmt.Fprintln(os.Stderr, "chooseStrategy forward left")
+					} else {
+						leds(0, 255, 0, 0)
+						fmt.Fprintln(os.Stderr, "chooseStrategy forward right")
+					}
+				}
+			} else if k.Key == ui.Down {
+				strategy = turnBack
+				strategyIsGoForward = false
+				if dir == ev3.Left {
+					leds(0, 0, 255, 0)
+					fmt.Fprintln(os.Stderr, "chooseStrategy back left")
+				} else {
+					leds(0, 0, 0, 255)
+					fmt.Fprintln(os.Stderr, "chooseStrategy back right")
+				}
 			}
+			speed(0, 0)
+			cmd()
 		}
 	}
 }
@@ -274,6 +328,7 @@ func seek(start int, dir ev3.Direction) {
 func circle(start int, dir ev3.Direction) {
 	now, elapsed := start, 0
 
+	log(now, dir, "CIRCLE find border")
 findBorder:
 	for {
 		select {
@@ -305,6 +360,7 @@ findBorder:
 		}
 	}
 
+	log(now, dir, "CIRCLE start")
 	dir = ev3.ChangeDirection(dir)
 	borderFoundTime := elapsed
 	for elapsed-borderFoundTime < config.CircleMillis {
@@ -317,19 +373,15 @@ findBorder:
 				return
 			}
 
-			var cornerValue int
 			if dir == ev3.Right {
-				cornerValue = d.CornerLeft
-			} else {
-				cornerValue = d.CornerRight
-			}
-
-			adjustInner := cornerValue * config.CircleAdjustInnerMax / 100
-			inner := config.CircleInnerSpeed - adjustInner
-
-			if dir == ev3.Right {
+				cornerValue := d.CornerLeft
+				adjustInner := cornerValue * config.CircleAdjustInnerMax / 100
+				inner := config.CircleInnerSpeedRight - adjustInner
 				speed(config.CircleOuterSpeed, inner)
 			} else {
+				cornerValue := d.CornerRight
+				adjustInner := cornerValue * config.CircleAdjustInnerMax / 100
+				inner := config.CircleInnerSpeedLeft - adjustInner
 				speed(inner, config.CircleOuterSpeed)
 			}
 
@@ -340,6 +392,7 @@ findBorder:
 		}
 	}
 
+	log(now, dir, "CIRCLE spiral")
 	circleDoneTime := elapsed
 	for elapsed-circleDoneTime < config.CircleSpiralMillis {
 		select {
@@ -364,6 +417,7 @@ findBorder:
 		}
 	}
 
+	log(now, dir, "CIRCLE done")
 	go seek(now, ev3.ChangeDirection(dir))
 }
 
@@ -489,5 +543,5 @@ func turnBack(start int, dir ev3.Direction) {
 
 // Run starts the logic module
 func Run() {
-	go waitBeginOrQuit(0)
+	go chooseStrategy(0)
 }
