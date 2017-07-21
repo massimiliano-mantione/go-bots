@@ -45,3 +45,15 @@ const CircleAdjustInnerMax = 300
 const CircleSpiralMillis = 20
 const CircleSpiralOuterSpeed = MaxSpeed
 const CircleSpiralInnerSpeed = 2500
+
+const GoForwardMillis = 600
+const GoForwardSpeed = MaxSpeed
+const GoForwardTurnMillis = 20
+const GoForwardTurnOuterSpeed = MaxSpeed
+const GoForwardTurnInnerSpeed = 1000
+
+const TurnBackMillis = 70
+const TurnBackOuterSpeed = MaxSpeed
+const TurnBackInnerSpeed = -MaxSpeed
+const TurnBackMoveMillis = 500
+const TurnBackMoveSpeed = MaxSpeed

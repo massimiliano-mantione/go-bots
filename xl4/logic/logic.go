@@ -107,7 +107,7 @@ func checkEnd(k ui.KeyEvent) {
 }
 
 func waitBeginOrQuit(start int) {
-	strategy := circle
+	strategy := turnBack
 	var dir ev3.Direction = ev3.Left
 
 	for {
@@ -306,7 +306,7 @@ findBorder:
 	}
 
 	dir = ev3.ChangeDirection(dir)
-	borderFoundTime := now
+	borderFoundTime := elapsed
 	for elapsed-borderFoundTime < config.CircleMillis {
 		select {
 		case d := <-data:
@@ -340,7 +340,7 @@ findBorder:
 		}
 	}
 
-	circleDoneTime := now
+	circleDoneTime := elapsed
 	for elapsed-circleDoneTime < config.CircleSpiralMillis {
 		select {
 		case d := <-data:
@@ -364,6 +364,126 @@ findBorder:
 		}
 	}
 
+	go seek(now, ev3.ChangeDirection(dir))
+}
+
+func goForward(start int, dir ev3.Direction) {
+	now, elapsed := start, 0
+
+	fmt.Fprintln(os.Stderr, "goForward", now, dir)
+
+	for elapsed < config.GoForwardMillis {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+
+			if checkVision(d) {
+				// FIXME: go track
+				return
+			}
+			if checkBorder(d, now) {
+				return
+			}
+
+			speed(config.GoForwardSpeed, config.GoForwardSpeed)
+
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+
+	fmt.Fprintln(os.Stderr, "goForward turn", now, dir)
+
+	forwardDone := elapsed
+	for elapsed-forwardDone < config.GoForwardTurnMillis {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+
+			if checkVision(d) {
+				// FIXME: go track
+				return
+			}
+			if checkBorder(d, now) {
+				return
+			}
+
+			if dir == ev3.Right {
+				speed(config.GoForwardTurnOuterSpeed, config.GoForwardTurnInnerSpeed)
+			} else {
+				speed(config.GoForwardTurnInnerSpeed, config.GoForwardTurnOuterSpeed)
+			}
+
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+
+	fmt.Fprintln(os.Stderr, "goForward done", now, dir)
+	go seek(now, ev3.ChangeDirection(dir))
+}
+
+func turnBack(start int, dir ev3.Direction) {
+	now, elapsed := start, 0
+
+	fmt.Fprintln(os.Stderr, "turnBack", now, dir)
+
+	for elapsed < config.TurnBackMillis {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+
+			if checkVision(d) {
+				// FIXME: go track
+				return
+			}
+			if checkBorder(d, now) {
+				return
+			}
+
+			if dir == ev3.Right {
+				speed(config.TurnBackOuterSpeed, config.TurnBackInnerSpeed)
+			} else {
+				speed(config.TurnBackInnerSpeed, config.TurnBackOuterSpeed)
+			}
+
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+
+	fmt.Fprintln(os.Stderr, "turnBack move", now, dir)
+
+	turnBackDone := elapsed
+	for elapsed-turnBackDone < config.TurnBackMoveMillis {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+
+			if checkVision(d) {
+				// FIXME: go track
+				return
+			}
+			if checkBorder(d, now) {
+				return
+			}
+
+			speed(config.TurnBackMoveSpeed, config.TurnBackMoveSpeed)
+
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
+
+	fmt.Fprintln(os.Stderr, "turnBack done", now, dir)
 	go seek(now, ev3.ChangeDirection(dir))
 }
 
