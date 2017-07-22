@@ -30,7 +30,7 @@ const BackTurn1Millis = 400
 const BackTurn2Speed = 4000
 const BackTurn2Millis = 300
 const BackMoveSpeed = MaxSpeed
-const BackMoveMillis = 500
+const BackMoveMillis = 400
 const BackTurn3Speed = 4000
 const BackTurn3Millis = 800
 
@@ -50,7 +50,9 @@ const CircleSpiralInnerSpeed = 2000
 
 const GoForwardMillis = 600
 const GoForwardSpeed = MaxSpeed
-const GoForwardTurnMillis = 600
+
+// const GoForwardTurnMillis = 600
+const GoForwardTurnMillis = 0
 const GoForwardTurnOuterSpeed = MaxSpeed
 const GoForwardTurnInnerSpeed = 1000
 
@@ -60,8 +62,8 @@ const TurnBackInnerSpeed = -MaxSpeed
 const TurnBackMoveMillis = 300
 const TurnBackMoveSpeed = MaxSpeed
 
-const TrackOnly1SensorOuterSpeed = 3000
-const TrackOnly1SensorInnerSpeed = -3000
+const TrackOnly1SensorOuterSpeed = MaxSpeed
+const TrackOnly1SensorInnerSpeed = 8000
 const TrackSpeed = MaxSpeed
 const TrackCenterZone = 10
 const TrackDifferenceCoefficent = 50

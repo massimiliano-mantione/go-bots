@@ -61,7 +61,6 @@ func log(now int, dir ev3.Direction, msg string) {
 }
 
 func cmd() {
-	speed(0, 0)
 	commandProcessor(&c)
 }
 
@@ -579,7 +578,7 @@ func track(start int) {
 				}
 
 			}
-			fmt.Fprintln(os.Stderr, "TRACK, speed", c.SpeedLeft, c.SpeedRight, ", IRsensors", d.IrLeftValue, d.IrRightValue)
+			// fmt.Fprintln(os.Stderr, "TRACK time ", now, ", speed", c.SpeedLeft, c.SpeedRight, ", IRsensors", d.IrLeftValue, d.IrRightValue)
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:

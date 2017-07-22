@@ -159,8 +159,8 @@ func Loop() {
 		colL.Sync()
 		irR.Sync()
 		irL.Sync()
-		//fmt.Fprintln(os.Stderr, "DATA", irL.Value, irR.Value)
-		//intensity, angle := vision.Process(millis, irL.Value, irR.Value)
+		// fmt.Fprintln(os.Stderr, "DATA", irL.Value, irR.Value)
+		// intensity, angle := vision.Process(millis, irL.Value, irR.Value)
 
 		data <- logic.Data{
 			Start:            start,
