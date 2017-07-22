@@ -4,7 +4,6 @@ import (
 	"go-bots/ev3"
 	"go-bots/xl4/config"
 	"go-bots/xl4/logic"
-	"go-bots/xl4/vision"
 	"time"
 )
 
@@ -160,8 +159,8 @@ func Loop() {
 		colL.Sync()
 		irR.Sync()
 		irL.Sync()
-
-		intensity, angle := vision.Process(millis, irL.Value, irR.Value)
+		//fmt.Fprintln(os.Stderr, "DATA", irL.Value, irR.Value)
+		//intensity, angle := vision.Process(millis, irL.Value, irR.Value)
 
 		data <- logic.Data{
 			Start:            start,
@@ -170,8 +169,8 @@ func Loop() {
 			CornerLeftIsOut:  colorIsOut(colL.Value),
 			CornerRight:      colR.Value,
 			CornerLeft:       colL.Value,
-			VisionIntensity:  intensity,
-			VisionAngle:      angle,
+			IrLeftValue:      irL.Value,
+			IrRightValue:     irR.Value,
 		}
 	}
 }

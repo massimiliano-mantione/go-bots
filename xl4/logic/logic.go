@@ -17,8 +17,8 @@ type Data struct {
 	CornerLeftIsOut  bool
 	CornerRight      int
 	CornerLeft       int
-	VisionIntensity  int
-	VisionAngle      int
+	IrLeftValue      int
+	IrRightValue     int
 }
 
 // Commands contains commands for motors and leds
@@ -61,6 +61,7 @@ func log(now int, dir ev3.Direction, msg string) {
 }
 
 func cmd() {
+	speed(0, 0)
 	commandProcessor(&c)
 }
 
@@ -98,8 +99,8 @@ func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
 }
 
 func ledsFromData(d Data) {
-	c.LedLeftGreen = 255 * d.VisionIntensity * ((config.VisionAngleMax - d.VisionAngle) / 2) / (config.VisionIntensityMax * config.VisionAngleMax)
-	c.LedRightGreen = 255 * d.VisionIntensity * ((config.VisionAngleMax + d.VisionAngle) / 2) / (config.VisionIntensityMax * config.VisionAngleMax)
+	c.LedLeftGreen = 255 * d.IrLeftValue / 100
+	c.LedRightGreen = 255 * d.IrRightValue / 100
 	if d.CornerLeftIsOut {
 		c.LedLeftRed = 255
 	} else {
@@ -208,8 +209,14 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 	}
 }
 
-func checkVision(d Data) bool {
-	return false
+func checkVision(d Data, now int) bool {
+	//	return d.IrLeftValue < config.MaxIrDistance || d.IrRightValue < config.MaxIrDistance
+	result := d.IrLeftValue < config.MaxIrDistance || d.IrRightValue < config.MaxIrDistance
+	if result {
+		fmt.Fprintln(os.Stderr, "CheckVision")
+		go track(now)
+	}
+	return result
 }
 
 func checkBorder(d Data, now int) bool {
@@ -247,7 +254,7 @@ func seekMove(start int, dir ev3.Direction, leftSpeed int, rightSpeed int, durat
 				return false, now
 			}
 
-			if checkVision(d) {
+			if checkVision(d, now) {
 				return true, now
 			}
 			if (!ignoreBorder) && checkBorder(d, now) {
@@ -368,8 +375,7 @@ findBorder:
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
-			if checkVision(d) {
-				// FIXME: go track
+			if checkVision(d, now) {
 				return
 			}
 
@@ -399,8 +405,7 @@ findBorder:
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
-			if checkVision(d) {
-				// FIXME: go track
+			if checkVision(d, now) {
 				return
 			}
 
@@ -431,8 +436,7 @@ func goForward(start int, dir ev3.Direction) {
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
-			if checkVision(d) {
-				// FIXME: go track
+			if checkVision(d, now) {
 				return
 			}
 			if checkBorder(d, now) {
@@ -456,8 +460,7 @@ func goForward(start int, dir ev3.Direction) {
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
-			if checkVision(d) {
-				// FIXME: go track
+			if checkVision(d, now) {
 				return
 			}
 			if checkBorder(d, now) {
@@ -491,8 +494,7 @@ func turnBack(start int, dir ev3.Direction) {
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
-			if checkVision(d) {
-				// FIXME: go track
+			if checkVision(d, now) {
 				return
 			}
 			if checkBorder(d, now) {
@@ -520,8 +522,7 @@ func turnBack(start int, dir ev3.Direction) {
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
-			if checkVision(d) {
-				// FIXME: go track
+			if checkVision(d, now) {
 				return
 			}
 			if checkBorder(d, now) {
@@ -539,6 +540,52 @@ func turnBack(start int, dir ev3.Direction) {
 
 	fmt.Fprintln(os.Stderr, "turnBack done", now, dir)
 	go seek(now, ev3.ChangeDirection(dir))
+}
+
+func track(start int) {
+	now, _ := start, 0
+	var dir ev3.Direction = ev3.Right
+
+	for {
+		select {
+		case d := <-data:
+			now, _ = handleTime(d, start)
+
+			if d.IrLeftValue >= config.MaxIrDistance && d.IrRightValue >= config.MaxIrDistance {
+				go seek(now, dir)
+				return
+			}
+			if checkBorder(d, now) {
+				return
+			}
+
+			if d.IrLeftValue >= config.MaxIrDistance {
+				speed(config.TrackOnly1SensorOuterSpeed, config.TrackOnly1SensorInnerSpeed)
+				dir = ev3.Right
+			} else if d.IrRightValue >= config.MaxIrDistance {
+				speed(config.TrackOnly1SensorInnerSpeed, config.TrackOnly1SensorOuterSpeed)
+				dir = ev3.Left
+			} else {
+				difference := d.IrLeftValue - d.IrRightValue
+
+				if difference > config.TrackCenterZone {
+					speed(config.TrackSpeed, config.TrackSpeed-(difference*config.TrackDifferenceCoefficent))
+					dir = ev3.Right
+				} else if difference < -config.TrackCenterZone {
+					speed(config.TrackSpeed+(difference*config.TrackDifferenceCoefficent), config.TrackSpeed)
+					dir = ev3.Left
+				} else {
+					speed(config.TrackSpeed, config.TrackSpeed)
+				}
+
+			}
+			fmt.Fprintln(os.Stderr, "TRACK, speed", c.SpeedLeft, c.SpeedRight, ", IRsensors", d.IrLeftValue, d.IrRightValue)
+			ledsFromData(d)
+			cmd()
+		case k := <-keys:
+			checkEnd(k)
+		}
+	}
 }
 
 // Run starts the logic module
