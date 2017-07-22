@@ -5,14 +5,15 @@ const ColorIsOut = 10
 const ForwardAcceleration = 10000 / 400
 const ReverseAcceleration = 10000 / 1
 
-const MaxIrValue = 100
+//const MaxIrValue = 100
+
 const MaxIrDistance = 100
 
 // VisionIntensityMax is the maximum vision intensity
-const VisionIntensityMax = 100
+//const VisionIntensityMax = 100
 
 // VisionAngleMax is the maximum vision angle (positive on the right)
-const VisionAngleMax = 100
+//const VisionAngleMax = 100
 
 const MaxSpeed = 10000
 
@@ -58,3 +59,9 @@ const TurnBackOuterSpeed = MaxSpeed
 const TurnBackInnerSpeed = -MaxSpeed
 const TurnBackMoveMillis = 300
 const TurnBackMoveSpeed = MaxSpeed
+
+const TrackOnly1SensorOuterSpeed = 3000
+const TrackOnly1SensorInnerSpeed = -3000
+const TrackSpeed = MaxSpeed
+const TrackCenterZone = 10
+const TrackDifferenceCoefficent = 50
