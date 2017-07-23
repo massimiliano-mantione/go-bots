@@ -70,3 +70,8 @@ const TrackOnly1SensorInnerSpeed = 8000
 const TrackSpeed = MaxSpeed
 const TrackCenterZone = 10
 const TrackDifferenceCoefficent = 50
+
+// VisionSpeed is the speed of the eyes motor, max is 1560
+const VisionSpeed = "900"
+const VisionMaxPosition = 158
+const VisionThresholdPosition = 155

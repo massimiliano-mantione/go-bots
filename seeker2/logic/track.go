@@ -56,9 +56,11 @@ func track(start int) {
 			*/
 			// fmt.Fprintln(os.Stderr, "TRACK time ", now, ", speed", c.SpeedLeft, c.SpeedRight, ", IRsensors", d.IrLeftValue, d.IrRightValue)
 			ledsFromData(d)
-			cmd()
+			cmd(true, true)
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 }

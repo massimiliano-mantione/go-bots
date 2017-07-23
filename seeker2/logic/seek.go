@@ -31,9 +31,11 @@ func seekMove(start int, dir ev3.Direction, leftSpeed int, rightSpeed int, durat
 
 			speed(leftSpeed, rightSpeed)
 			ledsFromData(d)
-			cmd()
+			cmd(true, false)
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return true, now
+			}
 		}
 	}
 }

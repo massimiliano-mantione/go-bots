@@ -20,7 +20,13 @@ func log(now int, dir ev3.Direction, msg string) {
 	fmt.Fprintln(os.Stderr, now, dirString, msg)
 }
 
-func cmd() {
+func cmd(eyesActive bool, frontActive bool) {
+
+	// REMOVE ME!
+	speed(0, 0)
+
+	c.EyesActive = eyesActive
+	c.FrontActive = frontActive
 	commandProcessor(&c)
 }
 
@@ -72,7 +78,17 @@ func ledsFromData(d Data) {
 	}
 }
 
-func checkEnd(k ui.KeyEvent) {
+func checkDone(k ui.KeyEvent) bool {
+	if k.Key == ui.Quit || k.Key == ui.Back {
+
+		log(k.Millis, ev3.NoDirection, " *** DONE ***")
+
+		go chooseStrategy(k.Millis)
+		return true
+	}
+	return false
+}
+func checkQuit(k ui.KeyEvent) {
 	if k.Key == ui.Quit || k.Key == ui.Back {
 		quit <- true
 		return

@@ -1,9 +1,12 @@
 package io
 
 import (
+	"fmt"
 	"go-bots/ev3"
 	"go-bots/seeker2/config"
 	"go-bots/seeker2/logic"
+	"go-bots/seeker2/vision"
+	"os"
 	"time"
 )
 
@@ -23,14 +26,24 @@ var ledRR, ledRG, ledLR, ledLG *ev3.Attribute
 
 var start time.Time
 
-var eyesTargetPosition int
-
-func goToEyesPosition(p int) {
-	if p != eyesTargetPosition {
-		eyesTargetPosition = p
-		pmesp.Value = p
+func getEyesDirection() ev3.Direction {
+	if pmesp.Value > 0 {
+		return ev3.Right
+	} else if pmesp.Value < 0 {
+		return ev3.Left
+	} else {
+		return ev3.NoDirection
+	}
+}
+func setEyesDirection(dir ev3.Direction) {
+	desiredSetPosition := int(config.VisionMaxPosition * dir)
+	if pmesp.Value != desiredSetPosition {
+		pmesp.Value = desiredSetPosition
 		pmesp.Sync()
 		ev3.RunCommand(dme, ev3.CmdRunToAbsPos)
+
+		fmt.Fprintln(os.Stderr, "setEyesDirection", dir, desiredSetPosition, pmesp.Value)
+
 	}
 }
 
@@ -125,11 +138,10 @@ func Init(d chan<- logic.Data, s time.Time) {
 
 	// Eyes
 	ev3.RunCommand(dme, ev3.CmdReset)
-	ev3.RunCommand(dme, ev3.CmdRunForever)
-	eyesTargetPosition = 0
-	pmesp.Value = 0
-	pmesp.Sync()
-	ev3.RunCommand(dme, ev3.CmdRunToAbsPos)
+	ev3.WriteStringAttribute(dme, ev3.Position, "0")
+	ev3.WriteStringAttribute(dme, ev3.SpeedSp, config.VisionSpeed)
+	ev3.WriteStringAttribute(dme, ev3.StopAction, "hold")
+	setEyesDirection(ev3.NoDirection)
 }
 
 var speedL, speedR int
@@ -179,8 +191,14 @@ func ProcessCommand(c *logic.Commands) {
 	}
 	mf.Sync()
 
+	// fmt.Fprintln(os.Stderr, "DATA EYES ACTIVE", c.EyesActive)
+
 	if !c.EyesActive {
-		goToEyesPosition(0)
+		setEyesDirection(ev3.NoDirection)
+	} else {
+		if getEyesDirection() == ev3.NoDirection {
+			setEyesDirection(ev3.Right)
+		}
 	}
 }
 
@@ -190,13 +208,19 @@ func Loop() {
 		now := time.Now()
 		millis := ev3.TimespanAsMillis(start, now)
 
-		// pf.Sync()
+		pme.Sync()
 		colR.Sync()
 		colL.Sync()
 		irR.Sync()
 		irL.Sync()
 
-		// vision.Process(millis, pf.Value, irR.Value, irL.Value)
+		visionIntensity, visionAngle, eyesDirection := 0, 0, getEyesDirection()
+		if eyesDirection != ev3.NoDirection {
+			// fmt.Fprintln(os.Stderr, "EYES PROCESS", eyesDirection)
+			visionIntensity, visionAngle, eyesDirection = vision.Process(millis, eyesDirection, pme.Value, irR.Value, irL.Value)
+			setEyesDirection(eyesDirection)
+		}
+
 		// fmt.Fprintln(os.Stderr, "DATA", colL.Value, colR.Value, irL.Value, irR.Value)
 
 		data <- logic.Data{
@@ -208,8 +232,8 @@ func Loop() {
 			CornerLeft:       colL.Value,
 			IrValueRight:     irR.Value,
 			IrValueLeft:      irL.Value,
-			VisionIntensity:  0,
-			VisionAngle:      0,
+			VisionIntensity:  visionIntensity,
+			VisionAngle:      visionAngle,
 		}
 	}
 }
