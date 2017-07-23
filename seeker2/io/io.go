@@ -76,9 +76,9 @@ func Init(d chan<- logic.Data, s time.Time) {
 	ev3.CheckDriver(devs.OutA, ev3.DriverTachoMotorMedium, ev3.OutA)
 	// B eyes
 	ev3.CheckDriver(devs.OutB, ev3.DriverTachoMotorMedium, ev3.OutB)
-	// C right direct
+	// C left direct
 	ev3.CheckDriver(devs.OutC, ev3.DriverRcxMotor, ev3.OutC)
-	// D left inverted
+	// D right inverted
 	ev3.CheckDriver(devs.OutD, ev3.DriverRcxMotor, ev3.OutD)
 
 	ev3.SetMode(devs.In1, ev3.ColorModeReflect)
@@ -95,10 +95,10 @@ func Init(d chan<- logic.Data, s time.Time) {
 	colR = ev3.OpenByteR(devs.In2, ev3.BinData)
 	irL = ev3.OpenByteR(devs.In3, ev3.BinData)
 	irR = ev3.OpenByteR(devs.In4, ev3.BinData)
-	// C right direct
-	mr = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
-	// D left inverted
-	ml = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
+	// C left direct
+	ml = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	// D right inverted
+	mr = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
 	// B eyes
 	dme = devs.OutB
 	pme = ev3.OpenTextR(devs.OutB, ev3.Position)
@@ -170,8 +170,8 @@ func ProcessCommand(c *logic.Commands) {
 	speedR = computeSpeed(speedR, c.SpeedRight, millis)
 	lastMillis = currentMillis
 
-	ml.Value = -speedL / 100
-	mr.Value = speedR / 100
+	ml.Value = speedL / 100
+	mr.Value = -speedR / 100
 	ml.Sync()
 	mr.Sync()
 
