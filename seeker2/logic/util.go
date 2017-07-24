@@ -21,10 +21,6 @@ func log(now int, dir ev3.Direction, msg string) {
 }
 
 func cmd(eyesActive bool, frontActive bool) {
-
-	// REMOVE ME!
-	speed(0, 0)
-
 	c.EyesActive = eyesActive
 	c.FrontActive = frontActive
 	commandProcessor(&c)
