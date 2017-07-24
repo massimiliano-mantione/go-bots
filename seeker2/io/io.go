@@ -194,9 +194,11 @@ func ProcessCommand(c *logic.Commands) {
 	// fmt.Fprintln(os.Stderr, "DATA EYES ACTIVE", c.EyesActive)
 
 	if !c.EyesActive {
+		vision.Reset()
 		setEyesDirection(ev3.NoDirection)
 	} else {
 		if getEyesDirection() == ev3.NoDirection {
+			vision.Reset()
 			setEyesDirection(ev3.Right)
 		}
 	}
