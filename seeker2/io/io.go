@@ -237,6 +237,8 @@ func Loop() {
 			VisionIntensity:  visionIntensity,
 			VisionAngle:      visionAngle,
 		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

@@ -41,11 +41,14 @@ func chooseStrategy(start int) {
 	leds(0, 0, 0, 0)
 	speed(0, 0)
 	cmd(false, false)
+	fmt.Fprintln(os.Stderr, "chooseStrategy START")
 
 	for {
 		select {
 		case d := <-data:
 			handleTime(d, start)
+			speed(0, 0)
+			cmd(false, false)
 		case k := <-keys:
 			checkQuit(k)
 			if k.Key == ui.Enter {

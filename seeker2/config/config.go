@@ -5,16 +5,6 @@ const ColorIsOut = 10
 const ForwardAcceleration = 10000 / 200
 const ReverseAcceleration = 10000 / 1
 
-//const MaxIrValue = 100
-
-const MaxIrDistance = 100
-
-// VisionIntensityMax is the maximum vision intensity
-//const VisionIntensityMax = 100
-
-// VisionAngleMax is the maximum vision angle (positive on the right)
-//const VisionAngleMax = 100
-
 const MaxSpeed = 10000
 
 const FrontWheelsSpeed = MaxSpeed
@@ -76,9 +66,12 @@ const TrackCenterZone = 10
 const TrackDifferenceCoefficent = 50
 
 // VisionSpeed is the speed of the eyes motor, max is 1560
-const VisionSpeed = "900"
+// const VisionSpeed = "900"
+const VisionSpeed = "300"
 const VisionFarValue = 100
 const VisionMaxValue = 100
 const VisionMaxAngle = 150
 const VisionMaxPosition = 158
 const VisionThresholdPosition = 155
+const VisionSpotWidth = 20
+const VisionSpotSearchWidth = VisionMaxPosition - VisionSpotWidth

@@ -23,6 +23,7 @@ func log(now int, dir ev3.Direction, msg string) {
 func cmd(eyesActive bool, frontActive bool) {
 	c.EyesActive = eyesActive
 	c.FrontActive = frontActive
+	speed(0, 0)
 	commandProcessor(&c)
 }
 

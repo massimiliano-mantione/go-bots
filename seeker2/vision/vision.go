@@ -9,8 +9,10 @@ import (
 
 var currentIntensityLeft int
 var currentPositionLeft int
+var hasLeftEstimation bool
 var currentIntensityRight int
 var currentPositionRight int
+var hasRightEstimation bool
 
 var estimatedIntensityLeft int
 var estimatedPositionLeft int
@@ -18,87 +20,116 @@ var estimatedIntensityRight int
 var estimatedPositionRight int
 
 func irValueToIntensity(value int) int {
-	if value > config.VisionFarValue {
+	if value >= config.VisionFarValue {
 		return 0
 	}
 	return config.VisionMaxValue - value
 }
 
 func estimate(d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
-	intensity = (estimatedIntensityLeft + estimatedIntensityRight) / 2
-	if intensity > 0 {
-		leftAngle := estimatedPositionLeft - config.VisionMaxAngle
-		rightAngle := estimatedPositionRight + config.VisionMaxAngle
-		leftRatio := intensity - (estimatedIntensityRight / 2)
-		rightRatio := intensity - (estimatedIntensityLeft / 2)
-		angle = ((leftAngle * leftRatio) + (rightAngle * rightRatio)) / intensity
+	leftAngle := estimatedPositionLeft - config.VisionMaxAngle
+	rightAngle := estimatedPositionRight + config.VisionMaxAngle
+	if estimatedIntensityLeft > estimatedIntensityRight {
+		return estimatedIntensityLeft, leftAngle, d
+	} else if estimatedIntensityRight > estimatedIntensityLeft {
+		return estimatedIntensityRight, rightAngle, d
 	} else {
-		angle = 0
+		return estimatedIntensityRight, (leftAngle + rightAngle) / 2, d
 	}
-	return intensity, angle, d
+	/*
+		intensity = (estimatedIntensityLeft + estimatedIntensityRight) / 2
+		if intensity > 0 {
+			leftAngle := estimatedPositionLeft - config.VisionMaxAngle
+			rightAngle := estimatedPositionRight + config.VisionMaxAngle
+			leftRatio := intensity - (estimatedIntensityRight / 2)
+			rightRatio := intensity - (estimatedIntensityLeft / 2)
+			angle = ((leftAngle * leftRatio) + (rightAngle * rightRatio)) / intensity
+		} else {
+			angle = 0
+		}
+		return intensity, angle, d
+	*/
 }
 
 // Reset resets the vision state
 func Reset() {
 	currentIntensityLeft = 0
 	currentPositionLeft = 0
+	hasLeftEstimation = false
 	currentIntensityRight = 0
 	currentPositionRight = 0
+	hasRightEstimation = false
 	estimatedIntensityLeft = 0
 	estimatedPositionLeft = 0
 	estimatedIntensityRight = 0
 	estimatedPositionRight = 0
 }
 
-func switchDirection(pos int) {
-	if currentIntensityLeft == 0 {
+func switchDirection(pos int, rightValue int, leftValue int, dir ev3.Direction) ev3.Direction {
+	leftIntensity := irValueToIntensity(leftValue)
+	rightIntensity := irValueToIntensity(rightValue)
+
+	if leftIntensity > 0 && !hasLeftEstimation {
+		estimatedIntensityLeft = leftIntensity
+		estimatedPositionLeft = pos
+	} else if currentIntensityLeft == 0 {
 		estimatedIntensityLeft = 0
 	}
 	currentIntensityLeft = 0
 	currentPositionLeft = pos
-	if currentIntensityRight == 0 {
+	hasLeftEstimation = false
+
+	if rightIntensity > 0 && !hasRightEstimation {
+		estimatedIntensityRight = rightIntensity
+		estimatedPositionRight = pos
+	} else if currentIntensityRight == 0 {
 		estimatedIntensityRight = 0
 	}
 	currentIntensityRight = 0
 	currentPositionRight = pos
+	hasRightEstimation = false
+
+	return ev3.ChangeDirection(dir)
 }
 
 // Process processes IR sensor data
 func Process(millis int, d ev3.Direction, pos int, rightValue int, leftValue int) (intensity int, angle int, dir ev3.Direction) {
 	if d == ev3.Right && pos >= config.VisionThresholdPosition {
-		dir = ev3.Left
-		switchDirection(pos)
-		return estimate(dir)
+		dir = switchDirection(pos, rightValue, leftValue, d)
 	} else if d == ev3.Left && pos <= -config.VisionThresholdPosition {
-		dir = ev3.Right
-		switchDirection(pos)
-		return estimate(dir)
+		dir = switchDirection(pos, rightValue, leftValue, d)
+	} else if hasLeftEstimation && pos-estimatedPositionLeft > config.VisionSpotWidth && estimatedPositionLeft < config.VisionSpotSearchWidth {
+		dir = switchDirection(pos, rightValue, leftValue, d)
+	} else if hasRightEstimation && pos-estimatedPositionRight > config.VisionSpotWidth && estimatedPositionRight > -config.VisionSpotSearchWidth {
+		dir = switchDirection(pos, rightValue, leftValue, d)
 	} else {
 		dir = d
-	}
 
-	leftIntensity := irValueToIntensity(leftValue)
-	if leftIntensity > currentIntensityLeft {
-		currentIntensityLeft = leftIntensity
-		currentPositionLeft = pos
-	} else if leftIntensity <= currentIntensityLeft {
-		estimatedIntensityLeft = currentIntensityLeft
-		estimatedPositionLeft = currentPositionLeft
-	}
+		leftIntensity := irValueToIntensity(leftValue)
+		if leftIntensity > currentIntensityLeft {
+			currentIntensityLeft = leftIntensity
+			currentPositionLeft = pos
+		} else if leftIntensity <= currentIntensityLeft {
+			estimatedIntensityLeft = currentIntensityLeft
+			estimatedPositionLeft = currentPositionLeft
+			hasLeftEstimation = true
+		}
 
-	rightIntensity := irValueToIntensity(rightValue)
-	if rightIntensity > currentIntensityRight {
-		currentIntensityRight = rightIntensity
-		currentPositionRight = pos
-	} else if rightIntensity <= currentIntensityRight {
-		estimatedIntensityRight = currentIntensityRight
-		estimatedPositionRight = currentPositionRight
-	}
+		rightIntensity := irValueToIntensity(rightValue)
+		if rightIntensity > currentIntensityRight {
+			currentIntensityRight = rightIntensity
+			currentPositionRight = pos
+		} else if rightIntensity <= currentIntensityRight {
+			estimatedIntensityRight = currentIntensityRight
+			estimatedPositionRight = currentPositionRight
+			hasRightEstimation = true
+		}
 
-	intens, ang, _ := estimate(dir)
-	fmt.Fprintln(os.Stderr, " - VISION PROCESS", d, pos, rightValue, leftValue)
-	fmt.Fprintln(os.Stderr, " - VISION   STATE", dir, estimatedIntensityLeft, estimatedPositionLeft, estimatedIntensityRight, estimatedPositionRight)
-	fmt.Fprintln(os.Stderr, " - VISION     RES", intens, ang)
+		intens, ang, _ := estimate(dir)
+		fmt.Fprintln(os.Stderr, " - VISION PROCESS", d, pos, leftIntensity, rightIntensity)
+		fmt.Fprintln(os.Stderr, " - VISION   STATE", dir, estimatedIntensityLeft, estimatedPositionLeft, estimatedIntensityRight, estimatedPositionRight)
+		fmt.Fprintln(os.Stderr, " - VISION     RES", intens, ang)
+	}
 
 	return estimate(dir)
 }
