@@ -66,9 +66,12 @@ const TrackCenterZone = 10
 const TrackDifferenceCoefficent = 50
 
 // VisionSpeed is the speed of the eyes motor, max is 1560
-// const VisionSpeed = "900"
-const VisionSpeed = "300"
-const VisionFarValue = 100
+const VisionSpeed = "500"
+
+const VisionFarValueFront = 95
+const VisionFarValueSide = 85
+const VisionFarValueDelta = VisionFarValueFront - VisionFarValueSide
+
 const VisionMaxValue = 100
 const VisionMaxAngle = 150
 const VisionMaxPosition = 158

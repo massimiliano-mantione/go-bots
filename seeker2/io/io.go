@@ -219,7 +219,7 @@ func Loop() {
 		visionIntensity, visionAngle, eyesDirection := 0, 0, getEyesDirection()
 		if eyesDirection != ev3.NoDirection {
 			// fmt.Fprintln(os.Stderr, "EYES PROCESS", eyesDirection)
-			visionIntensity, visionAngle, eyesDirection = vision.Process(millis, eyesDirection, pme.Value, irR.Value, irL.Value)
+			visionIntensity, visionAngle, eyesDirection = vision.Process(millis, eyesDirection, pme.Value, irL.Value, irR.Value)
 			setEyesDirection(eyesDirection)
 		}
 
@@ -237,8 +237,6 @@ func Loop() {
 			VisionIntensity:  visionIntensity,
 			VisionAngle:      visionAngle,
 		}
-
-		time.Sleep(100 * time.Millisecond)
 	}
 }
 

@@ -19,11 +19,26 @@ var estimatedPositionLeft int
 var estimatedIntensityRight int
 var estimatedPositionRight int
 
-func irValueToIntensity(value int) int {
-	if value >= config.VisionFarValue {
-		return 0
+func farValueAtPosition(pos int) (farValueLeft int, farValueRight int) {
+	if pos > 0 {
+		farValueLeft = config.VisionFarValueSide + (config.VisionFarValueDelta * pos / config.VisionMaxPosition)
+		farValueRight = config.VisionFarValueFront - (config.VisionFarValueDelta * pos / config.VisionMaxPosition)
+	} else {
+		farValueLeft = config.VisionFarValueFront + (config.VisionFarValueDelta * pos / config.VisionMaxPosition)
+		farValueRight = config.VisionFarValueSide - (config.VisionFarValueDelta * pos / config.VisionMaxPosition)
 	}
-	return config.VisionMaxValue - value
+	return
+}
+
+func irValuesToIntensity(leftValue int, rightValue int, pos int) (leftIntensity int, rightIntensity int) {
+	leftLimit, rightLimit := farValueAtPosition(pos)
+	if leftValue >= leftLimit {
+		leftValue = 100
+	}
+	if rightValue >= rightLimit {
+		rightValue = 100
+	}
+	return (100 - leftValue), (100 - rightValue)
 }
 
 func estimate(d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
@@ -65,10 +80,7 @@ func Reset() {
 	estimatedPositionRight = 0
 }
 
-func switchDirection(pos int, rightValue int, leftValue int, dir ev3.Direction) ev3.Direction {
-	leftIntensity := irValueToIntensity(leftValue)
-	rightIntensity := irValueToIntensity(rightValue)
-
+func switchDirection(pos int, leftIntensity int, rightIntensity int, dir ev3.Direction) ev3.Direction {
 	if leftIntensity > 0 && !hasLeftEstimation {
 		estimatedIntensityLeft = leftIntensity
 		estimatedPositionLeft = pos
@@ -93,19 +105,20 @@ func switchDirection(pos int, rightValue int, leftValue int, dir ev3.Direction) 
 }
 
 // Process processes IR sensor data
-func Process(millis int, d ev3.Direction, pos int, rightValue int, leftValue int) (intensity int, angle int, dir ev3.Direction) {
+func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int) (intensity int, angle int, dir ev3.Direction) {
+	leftIntensity, rightIntensity := irValuesToIntensity(leftValue, rightValue, pos)
+
 	if d == ev3.Right && pos >= config.VisionThresholdPosition {
-		dir = switchDirection(pos, rightValue, leftValue, d)
+		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
 	} else if d == ev3.Left && pos <= -config.VisionThresholdPosition {
-		dir = switchDirection(pos, rightValue, leftValue, d)
-	} else if hasLeftEstimation && pos-estimatedPositionLeft > config.VisionSpotWidth && estimatedPositionLeft < config.VisionSpotSearchWidth {
-		dir = switchDirection(pos, rightValue, leftValue, d)
-	} else if hasRightEstimation && pos-estimatedPositionRight > config.VisionSpotWidth && estimatedPositionRight > -config.VisionSpotSearchWidth {
-		dir = switchDirection(pos, rightValue, leftValue, d)
+		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
+		// } else if hasLeftEstimation && pos-estimatedPositionLeft > config.VisionSpotWidth && estimatedPositionLeft < config.VisionSpotSearchWidth {
+		//	dir = switchDirection(pos, leftIntensity, rightIntensity, d)
+		// } else if hasRightEstimation && pos-estimatedPositionRight > config.VisionSpotWidth && estimatedPositionRight > -config.VisionSpotSearchWidth {
+		//	dir = switchDirection(pos, leftIntensity, rightIntensity, d)
 	} else {
 		dir = d
 
-		leftIntensity := irValueToIntensity(leftValue)
 		if leftIntensity > currentIntensityLeft {
 			currentIntensityLeft = leftIntensity
 			currentPositionLeft = pos
@@ -115,7 +128,6 @@ func Process(millis int, d ev3.Direction, pos int, rightValue int, leftValue int
 			hasLeftEstimation = true
 		}
 
-		rightIntensity := irValueToIntensity(rightValue)
 		if rightIntensity > currentIntensityRight {
 			currentIntensityRight = rightIntensity
 			currentPositionRight = pos
