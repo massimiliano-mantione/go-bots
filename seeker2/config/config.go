@@ -7,9 +7,9 @@ const ReverseAcceleration = 10000 / 1
 
 const MaxSpeed = 10000
 
-const FrontWheelsSpeed = MaxSpeed
+const FrontWheelsSpeed = 100
 
-const StartTime = 20
+const StartTime = 2000
 
 const SeekMoveSpeed = 6000
 const SeekMoveMillis = 850
@@ -59,11 +59,12 @@ const TurnBackInnerSpeed = -MaxSpeed
 const TurnBackMoveMillis = 500
 const TurnBackMoveSpeed = MaxSpeed
 
-const TrackOnly1SensorOuterSpeed = MaxSpeed
-const TrackOnly1SensorInnerSpeed = 8000
-const TrackSpeed = MaxSpeed
-const TrackCenterZone = 10
-const TrackDifferenceCoefficent = 50
+const TrackFrontAngle = 30
+const TrackOuterSpeed = MaxSpeed
+const TrackInnerSpeedMax = -3000
+const TrackSpeedReductionAngle = VisionMaxAngle - TrackFrontAngle
+const TrackSpeedReductionMax = TrackOuterSpeed - TrackInnerSpeedMax
+const TrackVisionIntensityIgnoreBorder = 40
 
 // VisionSpeed is the speed of the eyes motor, max is 1560
 const VisionSpeed = "500"
@@ -76,5 +77,6 @@ const VisionMaxValue = 100
 const VisionMaxAngle = 150
 const VisionMaxPosition = 158
 const VisionThresholdPosition = 155
+const VisionEstimateReductionRange = 10
 const VisionSpotWidth = 20
 const VisionSpotSearchWidth = VisionMaxPosition - VisionSpotWidth

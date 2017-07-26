@@ -170,8 +170,22 @@ func ProcessCommand(c *logic.Commands) {
 	speedR = computeSpeed(speedR, c.SpeedRight, millis)
 	lastMillis = currentMillis
 
-	ml.Value = speedL / 100
-	mr.Value = -speedR / 100
+	mlValue := speedL / 100
+	mrValue := -speedR / 100
+	if mlValue > 100 {
+		mlValue = 100
+	}
+	if mlValue < -100 {
+		mlValue = -100
+	}
+	if mrValue > 100 {
+		mrValue = 100
+	}
+	if mrValue < -100 {
+		mrValue = -100
+	}
+	ml.Value = mlValue
+	mr.Value = mrValue
 	ml.Sync()
 	mr.Sync()
 

@@ -1,10 +1,8 @@
 package vision
 
 import (
-	"fmt"
 	"go-bots/ev3"
 	"go-bots/seeker2/config"
-	"os"
 )
 
 var currentIntensityLeft int
@@ -122,7 +120,7 @@ func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int
 		if leftIntensity > currentIntensityLeft {
 			currentIntensityLeft = leftIntensity
 			currentPositionLeft = pos
-		} else if leftIntensity <= currentIntensityLeft {
+		} else if leftIntensity < currentIntensityLeft-(currentIntensityLeft/config.VisionEstimateReductionRange) {
 			estimatedIntensityLeft = currentIntensityLeft
 			estimatedPositionLeft = currentPositionLeft
 			hasLeftEstimation = true
@@ -131,16 +129,16 @@ func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int
 		if rightIntensity > currentIntensityRight {
 			currentIntensityRight = rightIntensity
 			currentPositionRight = pos
-		} else if rightIntensity <= currentIntensityRight {
+		} else if rightIntensity < currentIntensityRight-(currentIntensityRight/config.VisionEstimateReductionRange) {
 			estimatedIntensityRight = currentIntensityRight
 			estimatedPositionRight = currentPositionRight
 			hasRightEstimation = true
 		}
 
-		intens, ang, _ := estimate(dir)
-		fmt.Fprintln(os.Stderr, " - VISION PROCESS", d, pos, leftIntensity, rightIntensity)
-		fmt.Fprintln(os.Stderr, " - VISION   STATE", dir, estimatedIntensityLeft, estimatedPositionLeft, estimatedIntensityRight, estimatedPositionRight)
-		fmt.Fprintln(os.Stderr, " - VISION     RES", intens, ang)
+		// intens, ang, _ := estimate(dir)
+		// fmt.Fprintln(os.Stderr, " - VISION PROCESS", d, pos, leftIntensity, rightIntensity)
+		// fmt.Fprintln(os.Stderr, " - VISION   STATE", dir, estimatedIntensityLeft, estimatedPositionLeft, estimatedIntensityRight, estimatedPositionRight)
+		// fmt.Fprintln(os.Stderr, " - VISION     RES", intens, ang)
 	}
 
 	return estimate(dir)

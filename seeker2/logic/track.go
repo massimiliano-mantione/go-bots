@@ -3,11 +3,12 @@ package logic
 import (
 	"fmt"
 	"go-bots/ev3"
+	"go-bots/seeker2/config"
 	"os"
 )
 
 func checkVision(d Data, now int) bool {
-	result := false
+	result := d.VisionIntensity > 0
 	if result {
 		fmt.Fprintln(os.Stderr, "CheckVision")
 		go track(now)
@@ -19,12 +20,14 @@ func track(start int) {
 	now, _ := start, 0
 	var dir ev3.Direction = ev3.Right
 
+	fmt.Fprintln(os.Stderr, "TRACK")
+
 	for {
 		select {
 		case d := <-data:
 			now, _ = handleTime(d, start)
 
-			if true {
+			if d.VisionIntensity == 0 {
 				go seek(now, dir)
 				return
 			}
@@ -32,6 +35,17 @@ func track(start int) {
 				return
 			}
 
+			if d.VisionAngle > config.TrackFrontAngle {
+				speedReductionAngle := d.VisionAngle - config.TrackFrontAngle
+				speedReduction := config.TrackSpeedReductionMax * speedReductionAngle / config.TrackSpeedReductionAngle
+				speed(config.TrackOuterSpeed, config.TrackOuterSpeed-speedReduction)
+			} else if d.VisionAngle < -config.TrackFrontAngle {
+				speedReductionAngle := config.TrackFrontAngle - d.VisionAngle
+				speedReduction := config.TrackSpeedReductionMax * speedReductionAngle / config.TrackSpeedReductionAngle
+				speed(config.TrackOuterSpeed-speedReduction, config.TrackOuterSpeed)
+			} else {
+				speed(config.TrackOuterSpeed, config.TrackOuterSpeed)
+			}
 			/*
 				if d.IrLeftValue >= config.MaxIrDistance {
 					speed(config.TrackOnly1SensorOuterSpeed, config.TrackOnly1SensorInnerSpeed)
