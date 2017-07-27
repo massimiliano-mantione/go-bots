@@ -30,7 +30,7 @@ func track(start int) {
 				go seek(now, dir)
 				return
 			}
-			if checkBorder(d, now) {
+			if (d.IrLeftValue >= config.IgnoreBorderIrDistance || d.IrRightValue >= config.IgnoreBorderIrDistance) && checkBorder(d, now) {
 				return
 			}
 

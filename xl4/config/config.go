@@ -8,6 +8,7 @@ const ReverseAcceleration = 10000 / 1
 //const MaxIrValue = 100
 
 const MaxIrDistance = 100
+const IgnoreBorderIrDistance = 40
 
 // VisionIntensityMax is the maximum vision intensity
 //const VisionIntensityMax = 100
