@@ -75,6 +75,8 @@ const VisionFarValueDelta = VisionFarValueFront - VisionFarValueSide
 
 const VisionMaxValue = 100
 const VisionMaxAngle = 150
+const VisionStartPosition = 150
+const VisionStartPositionString = "150"
 const VisionMaxPosition = 158
 const VisionThresholdPosition = 155
 const VisionEstimateReductionRange = 10

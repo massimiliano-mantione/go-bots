@@ -25,16 +25,19 @@ var ledRR, ledRG, ledLR, ledLG *ev3.Attribute
 var start time.Time
 
 func getEyesDirection() ev3.Direction {
-	if pmesp.Value > 0 {
+	if pmesp.Value == config.VisionMaxPosition {
 		return ev3.Right
-	} else if pmesp.Value < 0 {
+	} else if pmesp.Value == -config.VisionMaxPosition {
 		return ev3.Left
 	} else {
 		return ev3.NoDirection
 	}
 }
 func setEyesDirection(dir ev3.Direction) {
-	desiredSetPosition := int(config.VisionMaxPosition * dir)
+	desiredSetPosition := config.VisionStartPosition
+	if dir != ev3.NoDirection {
+		desiredSetPosition = int(config.VisionMaxPosition * dir)
+	}
 	if pmesp.Value != desiredSetPosition {
 		pmesp.Value = desiredSetPosition
 		pmesp.Sync()
@@ -133,7 +136,7 @@ func Init(d chan<- logic.Data, s time.Time) {
 
 	// Eyes
 	ev3.RunCommand(dme, ev3.CmdReset)
-	ev3.WriteStringAttribute(dme, ev3.Position, "0")
+	ev3.WriteStringAttribute(dme, ev3.Position, config.VisionStartPositionString)
 	ev3.WriteStringAttribute(dme, ev3.SpeedSp, config.VisionSpeed)
 	ev3.WriteStringAttribute(dme, ev3.StopAction, "hold")
 	setEyesDirection(ev3.NoDirection)
