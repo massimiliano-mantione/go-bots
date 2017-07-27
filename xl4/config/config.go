@@ -7,7 +7,7 @@ const ReverseAcceleration = 10000 / 1
 
 //const MaxIrValue = 100
 
-const MaxIrDistance = 100
+const MaxIrDistance = 80
 const IgnoreBorderIrDistance = 40
 
 // VisionIntensityMax is the maximum vision intensity
@@ -35,7 +35,7 @@ const BackMoveMillis = 400
 const BackTurn3Speed = 4000
 const BackTurn3Millis = 800
 
-const CircleFindBorderMillis = 80
+const CircleFindBorderMillis = 250
 const CircleFindBorderOuterSpeed = MaxSpeed * 80 / 100
 const CircleFindBorderInnerSpeed = MaxSpeed * 40 / 100
 const CircleFindBorderOuterSpeedSlow = MaxSpeed * 30 / 100
@@ -57,7 +57,9 @@ const GoForwardTurnMillis = 0
 const GoForwardTurnOuterSpeed = MaxSpeed
 const GoForwardTurnInnerSpeed = 1000
 
-const TurnBackMillis = 60
+const TurnBackPreMoveMillis = 300
+const TurnBackPreMoveSpeed = MaxSpeed
+const TurnBackMillis = 90
 const TurnBackOuterSpeed = MaxSpeed
 const TurnBackInnerSpeed = -MaxSpeed
 const TurnBackMoveMillis = 300

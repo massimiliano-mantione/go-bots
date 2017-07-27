@@ -70,11 +70,11 @@ const TrackVisionIntensityIgnoreBorder = 40
 // VisionSpeed is the speed of the eyes motor, max is 1560
 const VisionSpeed = "500"
 
-const VisionFarValueFront = 90
-const VisionFarValueSide = 80
+// const VisionFarValueFront = 90
+// const VisionFarValueSide = 80
 
-// const VisionFarValueFront = 70
-// const VisionFarValueSide = 60
+const VisionFarValueFront = 80
+const VisionFarValueSide = 70
 const VisionFarValueDelta = VisionFarValueFront - VisionFarValueSide
 
 const VisionMaxValue = 100

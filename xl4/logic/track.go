@@ -1,17 +1,13 @@
 package logic
 
 import (
-	"fmt"
 	"go-bots/ev3"
 	"go-bots/xl4/config"
-	"os"
 )
 
 func checkVision(d Data, now int) bool {
-	//	return d.IrLeftValue < config.MaxIrDistance || d.IrRightValue < config.MaxIrDistance
 	result := d.IrLeftValue < config.MaxIrDistance || d.IrRightValue < config.MaxIrDistance
 	if result {
-		fmt.Fprintln(os.Stderr, "CheckVision")
 		go track(now)
 	}
 	return result
@@ -20,6 +16,8 @@ func checkVision(d Data, now int) bool {
 func track(start int) {
 	now, _ := start, 0
 	var dir ev3.Direction = ev3.Right
+
+	log(now, ev3.NoDirection, "TRACK")
 
 	for {
 		select {
