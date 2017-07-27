@@ -50,7 +50,8 @@ func back(start int, dir ev3.Direction) {
 		if done {
 			return
 		}
-		done, now = seekMove(now, dir, config.BackTurn2Speed, -config.BackTurn2Speed, config.BackTurn2Millis, true)
+		fmt.Fprintln(os.Stderr, "BACK TURN", dir)
+		done, now = seekMove(now, dir, config.BackTurn2Speed, -config.BackTurn2Speed, config.BackTurn2Millis, false)
 		if done {
 			return
 		}
@@ -59,7 +60,8 @@ func back(start int, dir ev3.Direction) {
 		if done {
 			return
 		}
-		done, now = seekMove(now, dir, -config.BackTurn2Speed, config.BackTurn2Speed, config.BackTurn2Millis, true)
+		fmt.Fprintln(os.Stderr, "BACK TURN", dir)
+		done, now = seekMove(now, dir, -config.BackTurn2Speed, config.BackTurn2Speed, config.BackTurn2Millis, false)
 		if done {
 			return
 		}
@@ -69,7 +71,8 @@ func back(start int, dir ev3.Direction) {
 		if done {
 			return
 		}
-		done, now = seekMove(now, dir, config.BackTurn3Speed, -config.BackTurn3Speed, config.BackTurn3Millis, true)
+		fmt.Fprintln(os.Stderr, "BACK TURN", dir)
+		done, now = seekMove(now, dir, config.BackTurn3Speed, -config.BackTurn3Speed, config.BackTurn3Millis, false)
 		if done {
 			return
 		}

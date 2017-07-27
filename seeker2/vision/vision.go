@@ -5,9 +5,14 @@ import (
 	"go-bots/seeker2/config"
 )
 
+var firstIntensityLeft int
+var firstPositionLeft int
 var currentIntensityLeft int
 var currentPositionLeft int
 var hasLeftEstimation bool
+
+var firstIntensityRight int
+var firstPositionRight int
 var currentIntensityRight int
 var currentPositionRight int
 var hasRightEstimation bool
@@ -73,9 +78,13 @@ func estimate(d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
 
 // Reset resets the vision state
 func Reset() {
+	firstIntensityLeft = 0
+	firstPositionLeft = 0
 	currentIntensityLeft = 0
 	currentPositionLeft = 0
 	hasLeftEstimation = false
+	firstIntensityRight = 0
+	firstPositionRight = 0
 	currentIntensityRight = 0
 	currentPositionRight = 0
 	hasRightEstimation = false
@@ -92,6 +101,8 @@ func switchDirection(pos int, leftIntensity int, rightIntensity int, dir ev3.Dir
 	} else if currentIntensityLeft == 0 {
 		estimatedIntensityLeft = 0
 	}
+	firstIntensityLeft = 0
+	firstPositionLeft = 0
 	currentIntensityLeft = 0
 	currentPositionLeft = pos
 	hasLeftEstimation = false
@@ -102,6 +113,8 @@ func switchDirection(pos int, leftIntensity int, rightIntensity int, dir ev3.Dir
 	} else if currentIntensityRight == 0 {
 		estimatedIntensityRight = 0
 	}
+	firstIntensityRight = 0
+	firstPositionRight = 0
 	currentIntensityRight = 0
 	currentPositionRight = pos
 	hasRightEstimation = false
@@ -111,6 +124,27 @@ func switchDirection(pos int, leftIntensity int, rightIntensity int, dir ev3.Dir
 
 func estimationIsOld(estimationPosition int, pos int) bool {
 	return abs(pos-estimationPosition) > config.VisionSpotWidth && abs(estimationPosition) > config.VisionSpotSearchWidth
+}
+
+func computeEstimatedPositionCorrection(firstPosition int, firstIntensity int, currentPosition int, currentIntensity int, pos int, intensity int) int {
+	risingPositionDelta := currentPosition - firstPosition
+	descendingPositionDelta := pos - currentPosition
+
+	if risingPositionDelta == 0 || descendingPositionDelta == 0 {
+		return 0
+	}
+
+	risingIntensityDelta := currentIntensity - firstIntensity
+	descendingIntensityDelta := currentIntensity - intensity
+
+	risingRatio := risingIntensityDelta / risingPositionDelta
+	descendingRatio := descendingIntensityDelta / descendingPositionDelta
+
+	if risingRatio >= descendingRatio || descendingRatio == 0 {
+		return 0
+	}
+
+	return risingPositionDelta - (risingPositionDelta * risingRatio / descendingRatio)
 }
 
 // Process processes IR sensor data
@@ -129,29 +163,36 @@ func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int
 		dir = d
 
 		if leftIntensity > currentIntensityLeft {
+			if firstIntensityLeft == 0 {
+				firstIntensityLeft = leftIntensity
+				firstPositionLeft = pos
+			}
 			currentIntensityLeft = leftIntensity
 			currentPositionLeft = pos
 		} else if leftIntensity < currentIntensityLeft-(currentIntensityLeft/config.VisionEstimateReductionRange) {
 			estimatedIntensityLeft = currentIntensityLeft
-			estimatedPositionLeft = currentPositionLeft
+			positionCorrection := computeEstimatedPositionCorrection(abs(firstPositionLeft), firstIntensityLeft, currentPositionLeft, currentIntensityLeft, abs(pos), leftIntensity)
+			estimatedPositionLeft = currentPositionLeft - (int(dir) * positionCorrection)
 			hasLeftEstimation = true
 		}
 
 		if rightIntensity > currentIntensityRight {
+			if firstIntensityRight == 0 {
+				firstIntensityRight = rightIntensity
+				firstPositionRight = pos
+			}
 			currentIntensityRight = rightIntensity
 			currentPositionRight = pos
 		} else if rightIntensity < currentIntensityRight-(currentIntensityRight/config.VisionEstimateReductionRange) {
 			estimatedIntensityRight = currentIntensityRight
-			estimatedPositionRight = currentPositionRight
+			positionCorrection := computeEstimatedPositionCorrection(abs(firstPositionRight), firstIntensityRight, currentPositionRight, currentIntensityRight, abs(pos), rightIntensity)
+			estimatedPositionRight = currentPositionRight - (int(dir) * positionCorrection)
 			hasRightEstimation = true
 		}
 
 		// intens, ang, _ := estimate(dir)
-		// fmt.Fprintln(os.Stderr, " - VISION PROCESS", d, pos, leftIntensity, rightIntensity)
-		// fmt.Fprintln(os.Stderr, " - VISION   STATE", dir, estimatedIntensityLeft, estimatedPositionLeft, estimatedIntensityRight, estimatedPositionRight)
-		// fmt.Fprintln(os.Stderr, " - VISION     RES", intens, ang)
-		// fmt.Fprintln(os.Stderr, " VISION", dir, pos, intens, ang)
-		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, leftValue, rightValue, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", ang, intens)
+		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, leftValue, rightValue, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
+		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
 	}
 
 	return estimate(dir)

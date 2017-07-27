@@ -13,18 +13,18 @@ const StartTime = 2000
 
 const SeekMoveSpeed = 6000
 const SeekMoveMillis = 850
-const SeekTurnSpeed = 6000
-const SeekTurnMillis = 750
+const SeekTurnSpeed = 5000
+const SeekTurnMillis = 1200
 
 const BackTurn1SpeedOuter = MaxSpeed
 const BackTurn1SpeedInner = MaxSpeed / 2
 const BackTurn1Millis = 400
-const BackTurn2Speed = 7000
-const BackTurn2Millis = 500
+const BackTurn2Speed = 5000
+const BackTurn2Millis = 800
 const BackMoveSpeed = MaxSpeed
-const BackMoveMillis = 400
-const BackTurn3Speed = 7000
-const BackTurn3Millis = 800
+const BackMoveMillis = 500
+const BackTurn3Speed = 5000
+const BackTurn3Millis = 1000
 
 const CircleFindBorderMillis = 300
 const CircleFindBorderOuterSpeed = MaxSpeed * 60 / 100
@@ -60,17 +60,19 @@ const TurnBackMoveMillis = 500
 const TurnBackMoveSpeed = MaxSpeed
 
 const TrackFrontAngle = 30
-const TrackOuterSpeed = MaxSpeed
-const TrackInnerSpeedMax = -3000
+const TrackMaxSpeed = MaxSpeed
+const TrackInnerSpeed = 0
 const TrackSpeedReductionAngle = VisionMaxAngle - TrackFrontAngle
-const TrackSpeedReductionMax = TrackOuterSpeed - TrackInnerSpeedMax
+const TrackSpeedReductionMax = TrackMaxSpeed - TrackInnerSpeed
 const TrackVisionIntensityIgnoreBorder = 40
 
 // VisionSpeed is the speed of the eyes motor, max is 1560
 const VisionSpeed = "500"
 
-const VisionFarValueFront = 90
-const VisionFarValueSide = 80
+// const VisionFarValueFront = 90
+// const VisionFarValueSide = 80
+const VisionFarValueFront = 70
+const VisionFarValueSide = 60
 const VisionFarValueDelta = VisionFarValueFront - VisionFarValueSide
 
 const VisionMaxValue = 100
