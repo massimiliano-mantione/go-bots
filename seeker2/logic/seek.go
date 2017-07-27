@@ -8,17 +8,11 @@ import (
 )
 
 func seekMove(start int, dir ev3.Direction, leftSpeed int, rightSpeed int, duration int, ignoreBorder bool) (done bool, now int) {
-
-	fmt.Fprintln(os.Stderr, "seekMove", dir, leftSpeed, rightSpeed, duration)
-
 	for {
 		select {
 		case d := <-data:
 			now, elapsed := handleTime(d, start)
 			if elapsed >= duration {
-
-				fmt.Fprintln(os.Stderr, "seekMove elapsed", now, duration)
-
 				return false, now
 			}
 

@@ -177,6 +177,9 @@ findBorder:
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
+			if checkBorder(d, now) {
+				return
+			}
 			if checkVision(d, now) {
 				return
 			}
@@ -267,7 +270,33 @@ func turnBack(start int, dir ev3.Direction) {
 
 	fmt.Fprintln(os.Stderr, "turnBack", now, dir)
 
-	for elapsed < config.TurnBackMillis {
+	for elapsed < config.TurnBackPreMoveMillis {
+		select {
+		case d := <-data:
+			now, elapsed = handleTime(d, start)
+
+			if checkVision(d, now) {
+				return
+			}
+			if checkBorder(d, now) {
+				return
+			}
+
+			speed(config.TurnBackPreMoveSpeed, config.TurnBackPreMoveSpeed)
+
+			ledsFromData(d)
+			cmd(true, false)
+		case k := <-keys:
+			if checkDone(k) {
+				return
+			}
+		}
+	}
+
+	fmt.Fprintln(os.Stderr, "turnBack turn", now, dir)
+
+	turnBackDone := elapsed
+	for elapsed-turnBackDone < config.TurnBackMillis {
 		select {
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
@@ -296,8 +325,8 @@ func turnBack(start int, dir ev3.Direction) {
 
 	fmt.Fprintln(os.Stderr, "turnBack move", now, dir)
 
-	turnBackDone := elapsed
-	for elapsed-turnBackDone < config.TurnBackMoveMillis {
+	turnBackMoveDone := elapsed
+	for elapsed-turnBackMoveDone < config.TurnBackMoveMillis {
 		select {
 		case d := <-data:
 			now, elapsed = handleTime(d, start)

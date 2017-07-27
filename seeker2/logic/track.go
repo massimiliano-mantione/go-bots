@@ -31,36 +31,34 @@ func track(start int) {
 				go seek(now, dir)
 				return
 			}
-			if checkBorder(d, now) {
+			if d.VisionIntensity < config.VisionIgnoreBorderValue && checkBorder(d, now) {
 				return
 			}
 
 			if d.VisionAngle > config.TrackFrontAngle {
-				// speedReductionAngle := d.VisionAngle - config.TrackFrontAngle
-				// speedReduction := config.TrackSpeedReductionMax * speedReductionAngle / config.TrackSpeedReductionAngle
-				speedReduction := d.VisionAngle * 66
+				speedCorrectionAngle := config.VisionMaxAngle - d.VisionAngle
+				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
 
-				if (now / 1000) >= printTick {
-					printTick = (now / 1000) + 1
-					fmt.Fprintln(os.Stderr, "TRACK RIGHT", d.VisionIntensity, d.VisionAngle, speedReduction)
+				if (now / 500) >= printTick {
+					printTick = (now / 500) + 1
+					fmt.Fprintln(os.Stderr, "TRACK RIGHT", d.VisionIntensity, d.VisionAngle, speedCorrection)
 				}
 
-				speed(config.TrackMaxSpeed, config.TrackMaxSpeed-speedReduction)
+				speed(config.TrackOuterSpeed, config.TrackInnerSpeed+speedCorrection)
 			} else if d.VisionAngle < -config.TrackFrontAngle {
-				// speedReductionAngle := config.TrackFrontAngle - d.VisionAngle
-				// speedReduction := config.TrackSpeedReductionMax * speedReductionAngle / config.TrackSpeedReductionAngle
-				speedReduction := -d.VisionAngle * 66
+				speedCorrectionAngle := config.VisionMaxAngle + d.VisionAngle
+				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
 
-				if (now / 1000) >= printTick {
-					printTick = (now / 1000) + 1
-					fmt.Fprintln(os.Stderr, "TRACK LEFT", d.VisionIntensity, d.VisionAngle, speedReduction)
+				if (now / 500) >= printTick {
+					printTick = (now / 500) + 1
+					fmt.Fprintln(os.Stderr, "TRACK LEFT", d.VisionIntensity, d.VisionAngle, speedCorrection)
 				}
 
-				speed(config.TrackMaxSpeed-speedReduction, config.TrackMaxSpeed)
+				speed(config.TrackInnerSpeed+speedCorrection, config.TrackOuterSpeed)
 			} else {
 
-				if (now / 1000) >= printTick {
-					printTick = (now / 1000) + 1
+				if (now / 500) >= printTick {
+					printTick = (now / 500) + 1
 					fmt.Fprintln(os.Stderr, "TRACK FRONT", d.VisionIntensity, d.VisionAngle)
 				}
 
