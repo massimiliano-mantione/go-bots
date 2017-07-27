@@ -3,6 +3,7 @@ package logic
 import (
 	"fmt"
 	"go-bots/ev3"
+	"go-bots/seeker2/config"
 	"go-bots/ui"
 	"os"
 )
@@ -20,9 +21,17 @@ func log(now int, dir ev3.Direction, msg string) {
 	fmt.Fprintln(os.Stderr, now, dirString, msg)
 }
 
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
 func cmd(eyesActive bool, frontActive bool) {
 	c.EyesActive = eyesActive
 	c.FrontActive = frontActive
+	speed(0, 0)
 	commandProcessor(&c)
 }
 
@@ -60,15 +69,24 @@ func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
 }
 
 func ledsFromData(d Data) {
-	c.LedLeftGreen = 255 * d.IrValueLeft / 100
-	c.LedRightGreen = 255 * d.IrValueRight / 100
+	green := 255 * d.VisionIntensity / config.VisionMaxValue
+	if d.VisionAngle > 0 {
+		c.LedLeftGreen = normalizeLedValue(green - (green * d.VisionAngle / config.VisionMaxAngle))
+		c.LedRightGreen = normalizeLedValue(green)
+	} else if d.VisionAngle < 0 {
+		c.LedLeftGreen = normalizeLedValue(green)
+		c.LedRightGreen = normalizeLedValue(green + (green * d.VisionAngle / config.VisionMaxAngle))
+	} else {
+		c.LedLeftGreen = normalizeLedValue(green)
+		c.LedRightGreen = normalizeLedValue(green)
+	}
 	if d.CornerLeftIsOut {
-		c.LedLeftRed = 255
+		c.LedLeftRed = 0
 	} else {
 		c.LedLeftRed = 0
 	}
 	if d.CornerRightIsOut {
-		c.LedRightRed = 255
+		c.LedRightRed = 0
 	} else {
 		c.LedRightRed = 0
 	}

@@ -1,12 +1,10 @@
 package io
 
 import (
-	"fmt"
 	"go-bots/ev3"
 	"go-bots/seeker2/config"
 	"go-bots/seeker2/logic"
 	"go-bots/seeker2/vision"
-	"os"
 	"time"
 )
 
@@ -41,9 +39,6 @@ func setEyesDirection(dir ev3.Direction) {
 		pmesp.Value = desiredSetPosition
 		pmesp.Sync()
 		ev3.RunCommand(dme, ev3.CmdRunToAbsPos)
-
-		fmt.Fprintln(os.Stderr, "setEyesDirection", dir, desiredSetPosition, pmesp.Value)
-
 	}
 }
 

@@ -17,6 +17,13 @@ var estimatedPositionLeft int
 var estimatedIntensityRight int
 var estimatedPositionRight int
 
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
 func farValueAtPosition(pos int) (farValueLeft int, farValueRight int) {
 	if pos > 0 {
 		farValueLeft = config.VisionFarValueSide + (config.VisionFarValueDelta * pos / config.VisionMaxPosition)
@@ -102,6 +109,10 @@ func switchDirection(pos int, leftIntensity int, rightIntensity int, dir ev3.Dir
 	return ev3.ChangeDirection(dir)
 }
 
+func estimationIsOld(estimationPosition int, pos int) bool {
+	return abs(pos-estimationPosition) > config.VisionSpotWidth && abs(estimationPosition) > config.VisionSpotSearchWidth
+}
+
 // Process processes IR sensor data
 func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int) (intensity int, angle int, dir ev3.Direction) {
 	leftIntensity, rightIntensity := irValuesToIntensity(leftValue, rightValue, pos)
@@ -110,10 +121,10 @@ func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int
 		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
 	} else if d == ev3.Left && pos <= -config.VisionThresholdPosition {
 		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
-		// } else if hasLeftEstimation && pos-estimatedPositionLeft > config.VisionSpotWidth && estimatedPositionLeft < config.VisionSpotSearchWidth {
-		//	dir = switchDirection(pos, leftIntensity, rightIntensity, d)
-		// } else if hasRightEstimation && pos-estimatedPositionRight > config.VisionSpotWidth && estimatedPositionRight > -config.VisionSpotSearchWidth {
-		//	dir = switchDirection(pos, leftIntensity, rightIntensity, d)
+	} else if hasLeftEstimation && (rightIntensity == 0 || hasRightEstimation) && estimationIsOld(estimatedPositionLeft, pos) {
+		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
+	} else if hasRightEstimation && (leftIntensity == 0 || hasLeftEstimation) && estimationIsOld(estimatedPositionRight, pos) {
+		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
 	} else {
 		dir = d
 
@@ -139,6 +150,8 @@ func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int
 		// fmt.Fprintln(os.Stderr, " - VISION PROCESS", d, pos, leftIntensity, rightIntensity)
 		// fmt.Fprintln(os.Stderr, " - VISION   STATE", dir, estimatedIntensityLeft, estimatedPositionLeft, estimatedIntensityRight, estimatedPositionRight)
 		// fmt.Fprintln(os.Stderr, " - VISION     RES", intens, ang)
+		// fmt.Fprintln(os.Stderr, " VISION", dir, pos, intens, ang)
+		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, leftValue, rightValue, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", ang, intens)
 	}
 
 	return estimate(dir)
