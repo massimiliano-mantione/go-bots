@@ -27,7 +27,7 @@ const BackTurn3Speed = 5000
 const BackTurn3Millis = 1000
 
 const CircleFindBorderMillis = 200
-const CircleFindBorderOuterSpeed = MaxSpeed * 60 / 100
+const CircleFindBorderOuterSpeed = MaxSpeed * 70 / 100
 const CircleFindBorderInnerSpeed = MaxSpeed * 25 / 100
 const CircleFindBorderOuterSpeedSlow = MaxSpeed * 31 / 100
 const CircleFindBorderInnerSpeedSlow = MaxSpeed * 18 / 100
@@ -37,7 +37,7 @@ const CircleOuterSpeed = MaxSpeed
 const CircleInnerSpeedLeft = 5300
 const CircleInnerSpeedRight = 5300
 
-const CircleAdjustInnerMax = 300
+const CircleAdjustInnerMax = 440
 const CircleSpiralMillis = 500
 const CircleSpiralOuterSpeed = MaxSpeed
 const CircleSpiralInnerSpeed = 2000
