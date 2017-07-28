@@ -28,12 +28,12 @@ const SeekTurnMillis = 1500
 const BackTurn1SpeedOuter = MaxSpeed
 const BackTurn1SpeedInner = MaxSpeed / 2
 const BackTurn1Millis = 200
-const BackTurn2Speed = 4000
-const BackTurn2Millis = 750
+const BackTurn2Speed = 3700
+const BackTurn2Millis = 800
 const BackMoveSpeed = MaxSpeed
 const BackMoveMillis = 50
-const BackTurn3Speed = 4000
-const BackTurn3Millis = 1500
+const BackTurn3Speed = 3700
+const BackTurn3Millis = 1600
 
 const CircleFindBorderMillis = 250
 const CircleFindBorderOuterSpeed = MaxSpeed * 80 / 100
