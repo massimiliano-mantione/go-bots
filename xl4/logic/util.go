@@ -58,18 +58,21 @@ func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
 }
 
 func ledsFromData(d Data) {
-	c.LedLeftGreen = 255 * d.IrLeftValue / 100
-	c.LedRightGreen = 255 * d.IrRightValue / 100
-	if d.CornerLeftIsOut {
-		c.LedLeftRed = 255
-	} else {
-		c.LedLeftRed = 0
-	}
-	if d.CornerRightIsOut {
-		c.LedRightRed = 255
-	} else {
-		c.LedRightRed = 0
-	}
+	leds(0, 0, 0, 0)
+	/*
+		c.LedLeftGreen = 255 * d.IrLeftValue / 100
+		c.LedRightGreen = 255 * d.IrRightValue / 100
+		if d.CornerLeftIsOut {
+			c.LedLeftRed = 255
+		} else {
+			c.LedLeftRed = 0
+		}
+		if d.CornerRightIsOut {
+			c.LedRightRed = 255
+		} else {
+			c.LedRightRed = 0
+		}
+	*/
 }
 
 func checkDone(k ui.KeyEvent) bool {
