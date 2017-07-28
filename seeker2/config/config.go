@@ -43,8 +43,7 @@ const CircleSpiralOuterSpeed = MaxSpeed
 const CircleSpiralInnerSpeed = 2000
 
 const GoForwardMillis = 1000
-const GoForwardSpeedLeft = MaxSpeed
-const GoForwardSpeedRight = MaxSpeed
+const GoForwardSpeed = MaxSpeed
 
 // const GoForwardTurnMillis = 600
 const GoForwardTurnMillis = 0

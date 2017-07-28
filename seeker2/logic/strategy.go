@@ -220,7 +220,7 @@ func goForward(start int, dir ev3.Direction) {
 				return
 			}
 
-			speed(config.GoForwardSpeedLeft, config.GoForwardSpeedRight)
+			speed(config.GoForwardSpeed, config.GoForwardSpeed)
 
 			ledsFromData(d)
 			cmd(true, false)
