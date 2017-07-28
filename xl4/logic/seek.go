@@ -27,7 +27,9 @@ func seekMove(start int, dir ev3.Direction, leftSpeed int, rightSpeed int, durat
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return true, now
+			}
 		}
 	}
 }
@@ -42,6 +44,7 @@ func back(start int, dir ev3.Direction) {
 		if done {
 			return
 		}
+		fmt.Fprintln(os.Stderr, "BACK TURN", dir)
 		done, now = seekMove(now, dir, config.BackTurn2Speed, -config.BackTurn2Speed, config.BackTurn2Millis, false)
 		if done {
 			return
@@ -51,6 +54,7 @@ func back(start int, dir ev3.Direction) {
 		if done {
 			return
 		}
+		fmt.Fprintln(os.Stderr, "BACK TURN", dir)
 		done, now = seekMove(now, dir, -config.BackTurn2Speed, config.BackTurn2Speed, config.BackTurn2Millis, false)
 		if done {
 			return
@@ -61,6 +65,7 @@ func back(start int, dir ev3.Direction) {
 		if done {
 			return
 		}
+		fmt.Fprintln(os.Stderr, "BACK TURN", dir)
 		done, now = seekMove(now, dir, config.BackTurn3Speed, -config.BackTurn3Speed, config.BackTurn3Millis, false)
 		if done {
 			return

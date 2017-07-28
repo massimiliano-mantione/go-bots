@@ -72,7 +72,17 @@ func ledsFromData(d Data) {
 	}
 }
 
-func checkEnd(k ui.KeyEvent) {
+func checkDone(k ui.KeyEvent) bool {
+	if k.Key == ui.Quit || k.Key == ui.Back {
+
+		log(k.Millis, ev3.NoDirection, " *** DONE ***")
+
+		go chooseStrategy(k.Millis)
+		return true
+	}
+	return false
+}
+func checkQuit(k ui.KeyEvent) {
 	if k.Key == ui.Quit || k.Key == ui.Back {
 		quit <- true
 		return

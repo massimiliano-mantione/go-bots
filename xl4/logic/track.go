@@ -56,7 +56,9 @@ func track(start int) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 }

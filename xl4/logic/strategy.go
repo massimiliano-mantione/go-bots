@@ -12,9 +12,7 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 	for {
 		select {
 		case d := <-data:
-			now := d.Millis
-			c.Millis = now
-			elapsed := now - start
+			now, elapsed := handleTime(d, start)
 			if elapsed >= config.StartTime {
 				go strategy(now, dir)
 				return
@@ -28,7 +26,9 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 			}
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 }
@@ -44,10 +44,11 @@ func chooseStrategy(start int) {
 	for {
 		select {
 		case d := <-data:
-			now := d.Millis
-			c.Millis = now
+			handleTime(d, start)
+			speed(0, 0)
+			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			checkQuit(k)
 			if k.Key == ui.Enter {
 				go pauseBeforeBegin(k.Millis, strategy, dir)
 				return
@@ -128,7 +129,9 @@ findBorder:
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 
@@ -159,7 +162,9 @@ findBorder:
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 
@@ -170,6 +175,9 @@ findBorder:
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
+			if checkBorder(d, now) {
+				return
+			}
 			if checkVision(d, now) {
 				return
 			}
@@ -183,7 +191,9 @@ findBorder:
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 
@@ -213,7 +223,9 @@ func goForward(start int, dir ev3.Direction) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 
@@ -241,7 +253,9 @@ func goForward(start int, dir ev3.Direction) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 
@@ -253,6 +267,7 @@ func turnBack(start int, dir ev3.Direction) {
 	now, elapsed := start, 0
 
 	fmt.Fprintln(os.Stderr, "turnBack", now, dir)
+
 	for elapsed < config.TurnBackPreMoveMillis {
 		select {
 		case d := <-data:
@@ -270,7 +285,9 @@ func turnBack(start int, dir ev3.Direction) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 
@@ -297,7 +314,9 @@ func turnBack(start int, dir ev3.Direction) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 
@@ -321,7 +340,9 @@ func turnBack(start int, dir ev3.Direction) {
 			ledsFromData(d)
 			cmd()
 		case k := <-keys:
-			checkEnd(k)
+			if checkDone(k) {
+				return
+			}
 		}
 	}
 

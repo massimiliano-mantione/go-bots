@@ -294,9 +294,8 @@ func turnBack(start int, dir ev3.Direction) {
 	}
 
 	fmt.Fprintln(os.Stderr, "turnBack turn", now, dir)
-
-	turnBackDone := elapsed
-	for elapsed-turnBackDone < config.TurnBackMillis {
+	turnBackPreMoveDone := elapsed
+	for elapsed-turnBackPreMoveDone < config.TurnBackMillis {
 		select {
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
