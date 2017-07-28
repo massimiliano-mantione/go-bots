@@ -55,7 +55,7 @@ const TurnBackPreMoveMillis = 200
 const TurnBackMillis = 300
 const TurnBackOuterSpeed = MaxSpeed
 const TurnBackInnerSpeed = -MaxSpeed
-const TurnBackMoveMillis = 500
+const TurnBackMoveMillis = 650
 const TurnBackMoveSpeed = MaxSpeed
 
 const TrackFrontAngle = 20

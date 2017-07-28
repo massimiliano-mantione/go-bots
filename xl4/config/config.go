@@ -31,7 +31,7 @@ const BackTurn1Millis = 400
 const BackTurn2Speed = 4000
 const BackTurn2Millis = 300
 const BackMoveSpeed = MaxSpeed
-const BackMoveMillis = 400
+const BackMoveMillis = 200
 const BackTurn3Speed = 4000
 const BackTurn3Millis = 800
 
@@ -59,7 +59,7 @@ const GoForwardTurnInnerSpeed = 1000
 
 const TurnBackPreMoveMillis = 300
 const TurnBackPreMoveSpeed = MaxSpeed
-const TurnBackMillis = 90
+const TurnBackMillis = 180
 const TurnBackOuterSpeed = MaxSpeed
 const TurnBackInnerSpeed = -MaxSpeed
 const TurnBackMoveMillis = 300
