@@ -113,7 +113,7 @@ findBorder:
 				if elapsed < config.CircleFindBorderMillis {
 					speed(config.CircleFindBorderOuterSpeed, -config.CircleFindBorderInnerSpeed)
 				} else {
-					speed(config.CircleFindBorderOuterSpeedSlow, -config.CircleFindBorderInnerSpeedSlow)
+					speed(config.CircleFindBorderOuterSpeedSlowRight, -config.CircleFindBorderInnerSpeedSlowRight)
 				}
 			} else {
 				if d.CornerLeftIsOut {
@@ -122,7 +122,7 @@ findBorder:
 				if elapsed < config.CircleFindBorderMillis {
 					speed(-config.CircleFindBorderInnerSpeed, config.CircleFindBorderOuterSpeed)
 				} else {
-					speed(-config.CircleFindBorderInnerSpeedSlow, config.CircleFindBorderOuterSpeedSlow)
+					speed(-config.CircleFindBorderInnerSpeedSlowLeft, config.CircleFindBorderOuterSpeedSlowLeft)
 				}
 			}
 			ledsFromData(d)
