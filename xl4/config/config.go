@@ -18,7 +18,7 @@ const IgnoreBorderIrDistance = 40
 
 const MaxSpeed = 10000
 
-const StartTime = 2000
+const StartTime = 5000
 
 const SeekMoveSpeed = 3500
 const SeekMoveMillis = 860

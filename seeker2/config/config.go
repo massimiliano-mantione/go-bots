@@ -9,7 +9,7 @@ const MaxSpeed = 10000
 
 const FrontWheelsSpeed = 100
 
-const StartTime = 2000
+const StartTime = 5000
 
 const SeekMoveSpeed = 6000
 const SeekMoveMillis = 850
