@@ -25,7 +25,7 @@ func track(start int) {
 			now, _ = handleTime(d, start)
 
 			if d.IrLeftValue >= config.MaxIrDistance && d.IrRightValue >= config.MaxIrDistance {
-				go seek(now, dir)
+				go seek(now, dir, true)
 				return
 			}
 			if (d.IrLeftValue >= config.IgnoreBorderIrDistance || d.IrRightValue >= config.IgnoreBorderIrDistance) && checkBorder(d, now) {

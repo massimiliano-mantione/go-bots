@@ -34,7 +34,7 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 }
 
 func chooseStrategy(start int) {
-	strategy := seek
+	strategy := seekStrategy
 	strategyIsGoForward := false
 	var dir ev3.Direction = ev3.Left
 	leds(0, 0, 0, 0)
@@ -65,7 +65,7 @@ func chooseStrategy(start int) {
 				fmt.Fprintln(os.Stderr, "chooseStrategy circle right")
 			} else if k.Key == ui.Up {
 				if strategyIsGoForward {
-					strategy = seek
+					strategy = seekStrategy
 					strategyIsGoForward = false
 					leds(0, 0, 0, 0)
 					fmt.Fprintln(os.Stderr, "chooseStrategy seek")
@@ -188,7 +188,7 @@ findBorder:
 	}
 
 	log(now, dir, "CIRCLE done")
-	go seek(now, ev3.ChangeDirection(dir))
+	go seek(now, ev3.ChangeDirection(dir), false)
 }
 
 func goForward(start int, dir ev3.Direction) {
@@ -246,7 +246,7 @@ func goForward(start int, dir ev3.Direction) {
 	}
 
 	fmt.Fprintln(os.Stderr, "goForward done", now, dir)
-	go seek(now, ev3.ChangeDirection(dir))
+	go seek(now, ev3.ChangeDirection(dir), true)
 }
 
 func turnBack(start int, dir ev3.Direction) {
@@ -326,5 +326,5 @@ func turnBack(start int, dir ev3.Direction) {
 	}
 
 	fmt.Fprintln(os.Stderr, "turnBack done", now, dir)
-	go seek(now, ev3.ChangeDirection(dir))
+	go seek(now, ev3.ChangeDirection(dir), true)
 }
