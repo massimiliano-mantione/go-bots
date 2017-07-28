@@ -72,25 +72,34 @@ func back(start int, dir ev3.Direction) {
 		}
 	}
 
-	go seek(now, dir)
+	go seekMoving(now, dir)
 }
 
-func seek(start int, dir ev3.Direction) {
+func seekMoving(start int, dir ev3.Direction) {
+	seek(start, dir, false)
+}
+func seekTurning(start int, dir ev3.Direction) {
+	seek(start, dir, true)
+}
+
+func seek(start int, dir ev3.Direction, skipFirstMove bool) {
 
 	fmt.Fprintln(os.Stderr, "SEEK", dir)
 
 	done, now := false, start
 	for {
 
-		fmt.Fprintln(os.Stderr, "SEEK MOVE", dir, now)
-
-		done, now = seekMove(now, dir, config.SeekMoveSpeed, config.SeekMoveSpeed, config.SeekMoveMillis, false)
-		if done {
-			return
+		if !skipFirstMove {
+			fmt.Fprintln(os.Stderr, "SEEK MOVE", dir, now)
+			done, now = seekMove(now, dir, config.SeekMoveSpeed, config.SeekMoveSpeed, config.SeekMoveMillis, false)
+			if done {
+				return
+			}
+		} else {
+			skipFirstMove = false
 		}
 
 		fmt.Fprintln(os.Stderr, "SEEK TURN", dir, now)
-
 		done, now = seekMove(now, dir, config.SeekTurnSpeed*ev3.LeftTurnVersor(dir), config.SeekTurnSpeed*ev3.RightTurnVersor(dir), config.SeekTurnMillis, false)
 		if done {
 			return

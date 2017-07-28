@@ -30,17 +30,18 @@ func track(start int) {
 			now, _ = handleTime(d, start)
 
 			if d.VisionIntensity == 0 {
-				go seek(now, dir)
+				go seekTurning(now, dir)
 				return
 			}
 			if d.VisionIntensity < config.VisionIgnoreBorderValue && checkBorder(d, now) {
 				return
 			}
 
-			if d.VisionAngle > config.TrackFrontAngle {
+			if d.VisionAngle > config.TrackSemiFrontAngle {
+				dir = ev3.Right
 				speedCorrectionAngle := config.VisionMaxAngle - d.VisionAngle
 				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
-				// speedCorrection = speedCorrection * 300 / 400
+				speedCorrection = speedCorrection * 300 / 400
 
 				if (now / trackPrintMillis) >= printTick {
 					printTick = (now / trackPrintMillis) + 1
@@ -48,10 +49,17 @@ func track(start int) {
 				}
 
 				speed(config.TrackOuterSpeed, config.TrackInnerSpeed+speedCorrection)
-			} else if d.VisionAngle < -config.TrackFrontAngle {
+			} else if d.VisionAngle > config.TrackFrontAngle {
+				if (now / trackPrintMillis) >= printTick {
+					printTick = (now / trackPrintMillis) + 1
+					fmt.Fprintln(os.Stderr, "TRACK FRONT RIGHT", d.VisionIntensity, d.VisionAngle)
+				}
+				speed(config.TrackOuterSpeed, config.TrackSemiFrontInnerSpeed)
+			} else if d.VisionAngle < -config.TrackSemiFrontAngle {
+				dir = ev3.Left
 				speedCorrectionAngle := config.VisionMaxAngle + d.VisionAngle
 				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
-				// speedCorrection = speedCorrection * 300 / 400
+				speedCorrection = speedCorrection * 300 / 400
 
 				if (now / trackPrintMillis) >= printTick {
 					printTick = (now / trackPrintMillis) + 1
@@ -59,6 +67,12 @@ func track(start int) {
 				}
 
 				speed(config.TrackInnerSpeed+speedCorrection, config.TrackOuterSpeed)
+			} else if d.VisionAngle < -config.TrackFrontAngle {
+				if (now / trackPrintMillis) >= printTick {
+					printTick = (now / trackPrintMillis) + 1
+					fmt.Fprintln(os.Stderr, "TRACK FRONT LEFT", d.VisionIntensity, d.VisionAngle)
+				}
+				speed(config.TrackSemiFrontInnerSpeed, config.TrackOuterSpeed)
 			} else {
 
 				if (now / trackPrintMillis) >= printTick {

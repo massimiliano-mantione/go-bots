@@ -150,6 +150,8 @@ func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int
 		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
 	} else if hasRightEstimation && (leftIntensity == 0 || hasLeftEstimation) && estimationIsOld(estimatedPositionRight, pos) {
 		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
+	} else if (hasLeftEstimation || hasRightEstimation) && leftIntensity == 0 && rightIntensity == 0 {
+		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
 	} else {
 		dir = d
 
