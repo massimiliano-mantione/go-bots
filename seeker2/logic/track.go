@@ -15,6 +15,8 @@ func checkVision(d Data, now int) bool {
 	return result
 }
 
+const trackPrintMillis = 250
+
 func track(start int) {
 	now, _ := start, 0
 	var dir ev3.Direction = ev3.Right
@@ -38,9 +40,10 @@ func track(start int) {
 			if d.VisionAngle > config.TrackFrontAngle {
 				speedCorrectionAngle := config.VisionMaxAngle - d.VisionAngle
 				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
+				// speedCorrection = speedCorrection * 300 / 400
 
-				if (now / 500) >= printTick {
-					printTick = (now / 500) + 1
+				if (now / trackPrintMillis) >= printTick {
+					printTick = (now / trackPrintMillis) + 1
 					fmt.Fprintln(os.Stderr, "TRACK RIGHT", d.VisionIntensity, d.VisionAngle, speedCorrection)
 				}
 
@@ -48,17 +51,18 @@ func track(start int) {
 			} else if d.VisionAngle < -config.TrackFrontAngle {
 				speedCorrectionAngle := config.VisionMaxAngle + d.VisionAngle
 				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
+				// speedCorrection = speedCorrection * 300 / 400
 
-				if (now / 500) >= printTick {
-					printTick = (now / 500) + 1
+				if (now / trackPrintMillis) >= printTick {
+					printTick = (now / trackPrintMillis) + 1
 					fmt.Fprintln(os.Stderr, "TRACK LEFT", d.VisionIntensity, d.VisionAngle, speedCorrection)
 				}
 
 				speed(config.TrackInnerSpeed+speedCorrection, config.TrackOuterSpeed)
 			} else {
 
-				if (now / 500) >= printTick {
-					printTick = (now / 500) + 1
+				if (now / trackPrintMillis) >= printTick {
+					printTick = (now / trackPrintMillis) + 1
 					fmt.Fprintln(os.Stderr, "TRACK FRONT", d.VisionIntensity, d.VisionAngle)
 				}
 

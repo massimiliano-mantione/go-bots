@@ -68,7 +68,7 @@ func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
 }
 
 func ledsFromData(d Data) {
-	green := 255 * d.VisionIntensity / config.VisionMaxValue
+	green := 255 * d.VisionIntensity / config.VisionMaxIntensity
 	if d.VisionAngle > 0 {
 		c.LedLeftGreen = normalizeLedValue(green - (green * d.VisionAngle / config.VisionMaxAngle))
 		c.LedRightGreen = normalizeLedValue(green)

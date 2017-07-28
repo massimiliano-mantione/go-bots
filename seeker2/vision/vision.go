@@ -51,9 +51,13 @@ func irValuesToIntensity(leftValue int, rightValue int, pos int) (leftIntensity 
 	return (100 - leftValue), (100 - rightValue)
 }
 
+func positionToAngle(pos int) int {
+	return pos * 9 / 25
+}
+
 func estimate(d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
-	leftAngle := estimatedPositionLeft - config.VisionMaxAngle
-	rightAngle := estimatedPositionRight + config.VisionMaxAngle
+	leftAngle := positionToAngle(estimatedPositionLeft) - 45
+	rightAngle := positionToAngle(estimatedPositionRight) + 45
 	if estimatedIntensityLeft > estimatedIntensityRight {
 		return estimatedIntensityLeft, leftAngle, d
 	} else if estimatedIntensityRight > estimatedIntensityLeft {
@@ -61,19 +65,6 @@ func estimate(d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
 	} else {
 		return estimatedIntensityRight, (leftAngle + rightAngle) / 2, d
 	}
-	/*
-		intensity = (estimatedIntensityLeft + estimatedIntensityRight) / 2
-		if intensity > 0 {
-			leftAngle := estimatedPositionLeft - config.VisionMaxAngle
-			rightAngle := estimatedPositionRight + config.VisionMaxAngle
-			leftRatio := intensity - (estimatedIntensityRight / 2)
-			rightRatio := intensity - (estimatedIntensityLeft / 2)
-			angle = ((leftAngle * leftRatio) + (rightAngle * rightRatio)) / intensity
-		} else {
-			angle = 0
-		}
-		return intensity, angle, d
-	*/
 }
 
 // Reset resets the vision state

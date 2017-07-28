@@ -59,9 +59,9 @@ const TurnBackInnerSpeed = -MaxSpeed
 const TurnBackMoveMillis = 500
 const TurnBackMoveSpeed = MaxSpeed
 
-const TrackFrontAngle = 40
+const TrackFrontAngle = 20
 const TrackMaxSpeed = MaxSpeed
-const TrackOuterSpeed = 7000
+const TrackOuterSpeed = 5000
 const TrackInnerSpeed = 0
 const TrackSpeedReductionAngle = VisionMaxAngle - TrackFrontAngle
 const TrackSpeedReductionMax = TrackOuterSpeed - TrackInnerSpeed
@@ -77,14 +77,16 @@ const VisionFarValueFront = 80
 const VisionFarValueSide = 70
 const VisionFarValueDelta = VisionFarValueFront - VisionFarValueSide
 
-const VisionMaxValue = 100
-const VisionMaxAngle = 300
+const VisionMaxAngle = (VisionMaxPosition * 9 / 25) + 45
+
+const VisionMaxIntensity = 100
+
 const VisionStartPosition = 150
 const VisionStartPositionString = "150"
 const VisionMaxPosition = 158
 const VisionThresholdPosition = 155
 const VisionEstimateReductionRange = 10
-const VisionSpotWidth = 20
+const VisionSpotWidth = 15 * 25 / 9
 const VisionSpotSearchWidth = VisionMaxPosition - VisionSpotWidth
 
 const VisionIgnoreBorderValue = 60
