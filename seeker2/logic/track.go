@@ -41,7 +41,7 @@ func track(start int) {
 				dir = ev3.Right
 				speedCorrectionAngle := config.VisionMaxAngle - d.VisionAngle
 				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
-				speedCorrection = speedCorrection * 300 / 400
+				// speedCorrection = speedCorrection * 200 / 400
 
 				if (now / trackPrintMillis) >= printTick {
 					printTick = (now / trackPrintMillis) + 1
@@ -59,7 +59,7 @@ func track(start int) {
 				dir = ev3.Left
 				speedCorrectionAngle := config.VisionMaxAngle + d.VisionAngle
 				speedCorrection := config.TrackSpeedReductionMax * speedCorrectionAngle / config.TrackSpeedReductionAngle
-				speedCorrection = speedCorrection * 300 / 400
+				// speedCorrection = speedCorrection * 200 / 400
 
 				if (now / trackPrintMillis) >= printTick {
 					printTick = (now / trackPrintMillis) + 1
