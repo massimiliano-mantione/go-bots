@@ -25,7 +25,7 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 				leds(0, 0, intensity, intensity)
 			}
 			c.EyesActive = false
-			cmd(false, false)
+			cmd(false, false, ev3.NoDirection)
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -40,7 +40,7 @@ func chooseStrategy(start int) {
 	var dir ev3.Direction = ev3.Left
 	leds(0, 0, 0, 0)
 	speed(0, 0)
-	cmd(false, false)
+	cmd(false, false, ev3.NoDirection)
 	fmt.Fprintln(os.Stderr, "chooseStrategy START")
 
 	for {
@@ -48,7 +48,7 @@ func chooseStrategy(start int) {
 		case d := <-data:
 			handleTime(d, start)
 			speed(0, 0)
-			cmd(false, false)
+			cmd(false, false, ev3.NoDirection)
 		case k := <-keys:
 			checkQuit(k)
 			if k.Key == ui.Enter {
@@ -95,7 +95,7 @@ func chooseStrategy(start int) {
 				}
 			}
 			speed(0, 0)
-			cmd(false, false)
+			cmd(false, false, ev3.NoDirection)
 		}
 	}
 }
@@ -129,7 +129,7 @@ findBorder:
 				}
 			}
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekTurn(ev3.ChangeDirection(dir))
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -162,7 +162,7 @@ findBorder:
 			}
 
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekTurn(dir)
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -191,7 +191,7 @@ findBorder:
 			}
 
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekTurn(dir)
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -223,7 +223,7 @@ func goForward(start int, dir ev3.Direction) {
 			speed(config.GoForwardSpeed, config.GoForwardSpeed)
 
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekScan()
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -253,7 +253,7 @@ func goForward(start int, dir ev3.Direction) {
 			}
 
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekTurn(dir)
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -285,7 +285,7 @@ func turnBack(start int, dir ev3.Direction) {
 			speed(config.TurnBackPreMoveSpeed, config.TurnBackPreMoveSpeed)
 
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekTurn(dir)
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -314,7 +314,7 @@ func turnBack(start int, dir ev3.Direction) {
 			}
 
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekTurn(dir)
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -340,7 +340,7 @@ func turnBack(start int, dir ev3.Direction) {
 			speed(config.TurnBackMoveSpeed, config.TurnBackMoveSpeed)
 
 			ledsFromData(d)
-			cmd(true, false)
+			cmdSeekScan()
 		case k := <-keys:
 			if checkDone(k) {
 				return

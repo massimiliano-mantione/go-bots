@@ -24,19 +24,19 @@ var ledRR, ledRG, ledLR, ledLG *ev3.Attribute
 
 var start time.Time
 
-func getEyesDirection() ev3.Direction {
-	if pmesp.Value == config.VisionMaxPosition {
-		return ev3.Right
-	} else if pmesp.Value == -config.VisionMaxPosition {
-		return ev3.Left
-	} else {
-		return ev3.NoDirection
-	}
-}
-func setEyesDirection(dir ev3.Direction) {
+var eyesAreActive bool
+var eyesAreScanning bool
+var eyesDirection ev3.Direction
+
+func setEyesState(active bool, scanning bool, dir ev3.Direction) {
+	eyesAreActive, eyesAreScanning, eyesDirection = active, scanning, dir
 	desiredSetPosition := config.VisionStartPosition
-	if dir != ev3.NoDirection {
-		desiredSetPosition = int(config.VisionMaxPosition * dir)
+	if eyesAreActive {
+		if eyesAreScanning {
+			desiredSetPosition = int(config.VisionMaxPosition * dir)
+		} else {
+			desiredSetPosition = int(config.VisionTurnPosition * dir)
+		}
 	}
 	if pmesp.Value != desiredSetPosition {
 		pmesp.Value = desiredSetPosition
@@ -139,7 +139,7 @@ func Init(d chan<- logic.Data, s time.Time) {
 	ev3.WriteStringAttribute(dme, ev3.Position, config.VisionStartPositionString)
 	ev3.WriteStringAttribute(dme, ev3.SpeedSp, config.VisionSpeed)
 	ev3.WriteStringAttribute(dme, ev3.StopAction, "hold")
-	setEyesDirection(ev3.NoDirection)
+	setEyesState(false, false, ev3.NoDirection)
 }
 
 var speedL, speedR int
@@ -205,19 +205,24 @@ func ProcessCommand(c *logic.Commands) {
 
 	// fmt.Fprintln(os.Stderr, "DATA EYES ACTIVE", c.EyesActive)
 
-	if !c.EyesActive {
-		vision.Reset()
-		setEyesDirection(ev3.NoDirection)
-	} else {
-		if getEyesDirection() == ev3.NoDirection {
-			vision.Reset()
-			setEyesDirection(ev3.Right)
+	if c.EyesActive {
+		if c.EyesDirection == ev3.NoDirection {
+			if eyesDirection == ev3.NoDirection {
+				eyesDirection = ev3.Right
+			}
+			setEyesState(true, true, eyesDirection)
+		} else {
+			setEyesState(true, false, c.EyesDirection)
 		}
+	} else {
+		vision.Reset()
+		setEyesState(false, false, ev3.NoDirection)
 	}
 }
 
 // Loop contains the io loop
 func Loop() {
+	lastEyesIntensity := 0
 	for {
 		now := time.Now()
 		millis := ev3.TimespanAsMillis(start, now)
@@ -228,11 +233,23 @@ func Loop() {
 		irR.Sync()
 		irL.Sync()
 
-		visionIntensity, visionAngle, eyesDirection := 0, 0, getEyesDirection()
-		if eyesDirection != ev3.NoDirection {
-			// fmt.Fprintln(os.Stderr, "EYES PROCESS", eyesDirection)
-			visionIntensity, visionAngle, eyesDirection = vision.Process(millis, eyesDirection, pme.Value, irL.Value, irR.Value)
-			setEyesDirection(eyesDirection)
+		visionIntensity, visionAngle := 0, 0
+		if eyesAreActive {
+			if eyesAreScanning {
+				var desiredEyesDirection ev3.Direction
+				if lastEyesIntensity > 0 {
+					visionIntensity, visionAngle, desiredEyesDirection = vision.ProcessScan(millis, eyesDirection, pme.Value, irL.Value, irR.Value)
+				} else {
+					visionIntensity, visionAngle, desiredEyesDirection = vision.ProcessSeekScan(millis, eyesDirection, pme.Value, irL.Value, irR.Value)
+				}
+				setEyesState(true, true, desiredEyesDirection)
+			} else {
+				visionIntensity, visionAngle = vision.ProcessTurn(millis, eyesDirection, pme.Value, irL.Value, irR.Value, lastEyesIntensity > 0)
+				setEyesState(true, false, eyesDirection)
+			}
+			lastEyesIntensity = visionIntensity
+		} else {
+			lastEyesIntensity = 0
 		}
 
 		// fmt.Fprintln(os.Stderr, "DATA", colL.Value, colR.Value, irL.Value, irR.Value)

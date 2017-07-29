@@ -1,8 +1,10 @@
 package vision
 
 import (
+	"fmt"
 	"go-bots/ev3"
 	"go-bots/seeker2/config"
+	"os"
 )
 
 var firstIntensityLeft int
@@ -51,13 +53,13 @@ func irValuesToIntensity(leftValue int, rightValue int, pos int) (leftIntensity 
 	return (100 - leftValue), (100 - rightValue)
 }
 
-func positionToAngle(pos int) int {
-	return pos * 9 / 25
+func positionToAngle(pos int, dir ev3.Direction) int {
+	return (pos * 9 / 25) + (int(dir) * 45)
 }
 
 func estimate(d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
-	leftAngle := positionToAngle(estimatedPositionLeft) - 45
-	rightAngle := positionToAngle(estimatedPositionRight) + 45
+	leftAngle := positionToAngle(estimatedPositionLeft, ev3.Left)
+	rightAngle := positionToAngle(estimatedPositionRight, ev3.Right)
 	if estimatedIntensityLeft > estimatedIntensityRight {
 		return estimatedIntensityLeft, leftAngle, d
 	} else if estimatedIntensityRight > estimatedIntensityLeft {
@@ -138,8 +140,8 @@ func computeEstimatedPositionCorrection(firstPosition int, firstIntensity int, c
 	return risingPositionDelta - (risingPositionDelta * risingRatio / descendingRatio)
 }
 
-// Process processes IR sensor data
-func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int) (intensity int, angle int, dir ev3.Direction) {
+// ProcessScan processes IR sensor data in scan mode
+func ProcessScan(millis int, d ev3.Direction, pos int, leftValue int, rightValue int) (intensity int, angle int, dir ev3.Direction) {
 	leftIntensity, rightIntensity := irValuesToIntensity(leftValue, rightValue, pos)
 
 	if d == ev3.Right && pos >= config.VisionThresholdPosition {
@@ -183,10 +185,50 @@ func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int
 			hasRightEstimation = true
 		}
 
-		// intens, ang, _ := estimate(dir)
+		intens, ang, _ := estimate(dir)
 		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, leftValue, rightValue, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
-		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
+		fmt.Fprintln(os.Stderr, "VISION", dir, pos, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
 	}
 
 	return estimate(dir)
+}
+
+// ProcessTurn processes IR sensor data in turn mode
+func ProcessTurn(millis int, dir ev3.Direction, pos int, leftValue int, rightValue int, isInTrack bool) (intensity int, angle int) {
+	leftIntensity, rightIntensity := irValuesToIntensity(leftValue, rightValue, pos)
+
+	if dir == ev3.Left {
+		if leftIntensity > 0 && !isInTrack {
+			return leftIntensity, positionToAngle(pos, ev3.Left)
+		}
+		return rightIntensity, positionToAngle(pos, ev3.Right)
+	} else if dir == ev3.Right {
+		if rightIntensity > 0 && !isInTrack {
+			return rightIntensity, positionToAngle(pos, ev3.Right)
+		}
+		return leftIntensity, positionToAngle(pos, ev3.Left)
+	}
+	return 0, 0
+}
+
+// ProcessSeekScan processes IR sensor data in turn mode
+func ProcessSeekScan(millis int, d ev3.Direction, pos int, leftValue int, rightValue int) (intensity int, angle int, dir ev3.Direction) {
+	Reset()
+	leftIntensity, rightIntensity := irValuesToIntensity(leftValue, rightValue, pos)
+
+	if d == ev3.Right && pos >= config.VisionThresholdPosition {
+		dir = ev3.Left
+	} else if d == ev3.Left && pos <= -config.VisionThresholdPosition {
+		dir = ev3.Right
+	} else {
+		dir = d
+	}
+
+	if leftIntensity > rightIntensity {
+		return leftIntensity, positionToAngle(pos, ev3.Left), dir
+	} else if rightIntensity > leftIntensity {
+		return rightIntensity, positionToAngle(pos, ev3.Right), dir
+	}
+
+	return leftIntensity, (positionToAngle(pos, ev3.Left) + positionToAngle(pos, ev3.Right)) / 2, dir
 }

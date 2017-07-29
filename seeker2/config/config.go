@@ -9,7 +9,8 @@ const MaxSpeed = 10000
 
 const FrontWheelsSpeed = 100
 
-const StartTime = 5000
+// const StartTime = 5000
+const StartTime = 20
 
 const SeekMoveSpeed = 6000
 const SeekMoveMillis = 850
@@ -59,14 +60,14 @@ const TurnBackMoveMillis = 650
 const TurnBackMoveSpeed = MaxSpeed
 
 const TrackFrontAngle = 15
-const TrackSemiFrontAngle = 30
-const TrackSemiFrontInnerSpeed = MaxSpeed / 2
 const TrackMaxSpeed = MaxSpeed
-const TrackOuterSpeed = 4000
+const TrackOuterSpeed = 5000
 const TrackInnerSpeed = -3000
-const TrackSpeedReductionAngle = VisionMaxAngle - TrackFrontAngle
-const TrackSpeedReductionMax = TrackOuterSpeed - TrackInnerSpeed
+
+// const TrackSpeedReductionAngle = TrackScanAngle - TrackFrontAngle
+// const TrackSpeedReductionMax = TrackOuterSpeed - TrackInnerSpeed
 const TrackVisionIntensityIgnoreBorder = 40
+const TrackTurnSpeed = 3000
 
 // VisionSpeed is the speed of the eyes motor, max is 1560
 const VisionSpeed = "450"
@@ -85,6 +86,7 @@ const VisionMaxIntensity = 100
 const VisionStartPosition = 150
 const VisionStartPositionString = "150"
 const VisionMaxPosition = 158
+const VisionTurnPosition = 150
 const VisionThresholdPosition = 155
 const VisionEstimateReductionRange = 10
 const VisionSpotWidth = 5 * 25 / 9

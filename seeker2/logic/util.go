@@ -28,10 +28,23 @@ func abs(v int) int {
 	return v
 }
 
-func cmd(eyesActive bool, frontActive bool) {
+func cmd(eyesActive bool, frontActive bool, eyesDirection ev3.Direction) {
 	c.EyesActive = eyesActive
 	c.FrontActive = frontActive
+	c.EyesDirection = eyesDirection
 	commandProcessor(&c)
+}
+func cmdSeekTurn(eyesDirection ev3.Direction) {
+	cmd(true, false, eyesDirection)
+}
+func cmdSeekScan() {
+	cmd(true, false, ev3.NoDirection)
+}
+func cmdTrackTurn(eyesDirection ev3.Direction) {
+	cmd(true, true, eyesDirection)
+}
+func cmdTrackScan() {
+	cmd(true, true, ev3.NoDirection)
 }
 
 func handleTime(d Data, start int) (now int, elapsed int) {

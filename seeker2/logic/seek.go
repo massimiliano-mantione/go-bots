@@ -25,7 +25,7 @@ func seekMove(start int, dir ev3.Direction, leftSpeed int, rightSpeed int, durat
 
 			speed(leftSpeed, rightSpeed)
 			ledsFromData(d)
-			cmd(true, false)
+			cmd(true, false, dir)
 		case k := <-keys:
 			if checkDone(k) {
 				return true, now
@@ -61,7 +61,7 @@ func back(start int, dir ev3.Direction) {
 		}
 	} else {
 		dir = ev3.Right
-		done, now = seekMove(now, dir, -config.BackMoveSpeed, -config.BackMoveSpeed, config.BackMoveMillis, true)
+		done, now = seekMove(now, ev3.NoDirection, -config.BackMoveSpeed, -config.BackMoveSpeed, config.BackMoveMillis, true)
 		if done {
 			return
 		}
@@ -91,7 +91,7 @@ func seek(start int, dir ev3.Direction, skipFirstMove bool) {
 
 		if !skipFirstMove {
 			fmt.Fprintln(os.Stderr, "SEEK MOVE", dir, now)
-			done, now = seekMove(now, dir, config.SeekMoveSpeed, config.SeekMoveSpeed, config.SeekMoveMillis, false)
+			done, now = seekMove(now, ev3.NoDirection, config.SeekMoveSpeed, config.SeekMoveSpeed, config.SeekMoveMillis, false)
 			if done {
 				return
 			}

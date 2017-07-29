@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"go-bots/ev3"
 	"go-bots/ui"
 	"time"
 )
@@ -26,6 +27,7 @@ type Commands struct {
 	SpeedRight    int
 	FrontActive   bool
 	EyesActive    bool
+	EyesDirection ev3.Direction
 	LedRightRed   int
 	LedRightGreen int
 	LedLeftRed    int
