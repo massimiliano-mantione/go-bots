@@ -106,7 +106,9 @@ func Init(d chan<- logic.Data, s time.Time) {
 
 func computeSpeed(currentSpeed int, targetSpeed int, millis int) int {
 	if currentSpeed < targetSpeed {
-		currentSpeed += (config.ForwardAcceleration * millis)
+		speedDelta := currentSpeed + config.MaxSpeed
+		forwardAcceleration := config.ForwardAcceleration + (speedDelta / (config.MaxSpeed * 2))
+		currentSpeed += (forwardAcceleration * millis)
 		if currentSpeed > targetSpeed {
 			currentSpeed = targetSpeed
 		}

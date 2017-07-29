@@ -175,9 +175,6 @@ findBorder:
 		case d := <-data:
 			now, elapsed = handleTime(d, start)
 
-			if checkBorder(d, now) {
-				return
-			}
 			if checkVision(d, now) {
 				return
 			}
@@ -335,7 +332,12 @@ func turnBack(start int, dir ev3.Direction) {
 				return
 			}
 
-			speed(config.TurnBackMoveSpeed, config.TurnBackMoveSpeed)
+			// speed(config.TurnBackMoveSpeed, config.TurnBackMoveSpeed)
+			if dir == ev3.Right {
+				speed(config.TurnBackMoveSpeed*20/100, config.TurnBackMoveSpeed)
+			} else {
+				speed(config.TurnBackMoveSpeed, config.TurnBackMoveSpeed*20/100)
+			}
 
 			ledsFromData(d)
 			cmd()

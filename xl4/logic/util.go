@@ -94,18 +94,22 @@ func checkQuit(k ui.KeyEvent) {
 
 func checkBorder(d Data, now int) bool {
 	if d.CornerLeftIsOut {
-		if d.CornerRightIsOut {
-			go back(now, ev3.NoDirection)
-			return true
-		}
+		/*
+			if d.CornerRightIsOut {
+				go back(now, ev3.NoDirection)
+				return true
+			}
+		*/
 		go back(now, ev3.Left)
 		return true
 	}
 	if d.CornerRightIsOut {
-		if d.CornerLeftIsOut {
-			go back(now, ev3.NoDirection)
-			return true
-		}
+		/*
+			if d.CornerLeftIsOut {
+				go back(now, ev3.NoDirection)
+				return true
+			}
+		*/
 		go back(now, ev3.Right)
 		return true
 	}
