@@ -7,8 +7,7 @@ const ReverseAcceleration = 10000 / 1
 
 //const MaxIrValue = 100
 
-// const MaxIrDistance = 80
-const MaxIrDistance = 0
+const MaxIrDistance = 80
 
 const IgnoreBorderIrDistance = 40
 
