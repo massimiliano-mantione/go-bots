@@ -31,6 +31,7 @@ func abs(v int) int {
 func cmd(eyesActive bool, frontActive bool) {
 	c.EyesActive = eyesActive
 	c.FrontActive = frontActive
+	speed(0, 0)
 	commandProcessor(&c)
 }
 

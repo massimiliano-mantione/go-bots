@@ -1,26 +1,89 @@
 package vision
 
 import (
+	"fmt"
 	"go-bots/ev3"
 	"go-bots/seeker2/config"
+	"os"
 )
 
-var firstIntensityLeft int
-var firstPositionLeft int
-var currentIntensityLeft int
-var currentPositionLeft int
-var hasLeftEstimation bool
+var maxIntensityLeft int
 
-var firstIntensityRight int
-var firstPositionRight int
-var currentIntensityRight int
-var currentPositionRight int
-var hasRightEstimation bool
+func hasSeenLeft() bool {
+	return maxIntensityLeft > 0
+}
 
-var estimatedIntensityLeft int
-var estimatedPositionLeft int
-var estimatedIntensityRight int
-var estimatedPositionRight int
+var maxIntensityRight int
+
+func hasSeenRight() bool {
+	return maxIntensityRight > 0
+}
+
+type Point struct {
+	Millis    int
+	Intensity int
+	Angle     int
+}
+
+var point0 Point
+var point1 Point
+var point2 Point
+var point3 Point
+var point4 Point
+var point5 Point
+var point6 Point
+var point7 Point
+var point8 Point
+
+func recordPoint(millis int, intensity int, angle int) {
+	point8 = point7
+	point7 = point6
+	point6 = point5
+	point5 = point4
+	point4 = point3
+	point3 = point2
+	point2 = point1
+	point1 = point0
+	point0.Millis = millis
+	point0.Intensity = intensity
+	point0.Angle = angle
+}
+
+func contributePoint(now int, intensitySum int, angleSum int, ic int, ac int, point Point) (nextIntensitySum int, nextAngleSum int, intensityCount int, angleCount int) {
+	timeAttenuation := 1 + ((now - point.Millis) / 10)
+	nextIntensitySum = intensitySum + (point.Intensity / timeAttenuation)
+	intensityCount = ic + 1
+	if point.Intensity > 0 {
+		nextAngleSum = angleSum + (point.Angle / timeAttenuation)
+		angleCount = ac + 1
+	} else {
+		nextAngleSum = angleSum
+		angleCount = ac
+	}
+	return
+}
+
+func estimate(now int, d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
+	intensity, angle, intensityCount, angleCount := 0, 0, 0, 0
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point0)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point1)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point2)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point3)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point4)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point5)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point6)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point7)
+	intensity, angle, intensityCount, angleCount = contributePoint(now, intensity, angle, intensityCount, angleCount, point8)
+	intensity /= intensityCount
+	if angleCount > 0 {
+		angle /= angleCount
+	} else {
+		angle = 0
+	}
+
+	dir = d
+	return
+}
 
 func abs(v int) int {
 	if v < 0 {
@@ -51,142 +114,51 @@ func irValuesToIntensity(leftValue int, rightValue int, pos int) (leftIntensity 
 	return (100 - leftValue), (100 - rightValue)
 }
 
-func positionToAngle(pos int) int {
-	return pos * 9 / 25
-}
-
-func estimate(d ev3.Direction) (intensity int, angle int, dir ev3.Direction) {
-	leftAngle := positionToAngle(estimatedPositionLeft) - 45
-	rightAngle := positionToAngle(estimatedPositionRight) + 45
-	if estimatedIntensityLeft > estimatedIntensityRight {
-		return estimatedIntensityLeft, leftAngle, d
-	} else if estimatedIntensityRight > estimatedIntensityLeft {
-		return estimatedIntensityRight, rightAngle, d
-	} else {
-		return estimatedIntensityRight, (leftAngle + rightAngle) / 2, d
-	}
+func positionToAngle(pos int, dir ev3.Direction) int {
+	return (pos * 9 / 25) + (int(dir) * 45)
 }
 
 // Reset resets the vision state
 func Reset() {
-	firstIntensityLeft = 0
-	firstPositionLeft = 0
-	currentIntensityLeft = 0
-	currentPositionLeft = 0
-	hasLeftEstimation = false
-	firstIntensityRight = 0
-	firstPositionRight = 0
-	currentIntensityRight = 0
-	currentPositionRight = 0
-	hasRightEstimation = false
-	estimatedIntensityLeft = 0
-	estimatedPositionLeft = 0
-	estimatedIntensityRight = 0
-	estimatedPositionRight = 0
+	maxIntensityLeft = 0
+	maxIntensityRight = 0
 }
 
-func switchDirection(pos int, leftIntensity int, rightIntensity int, dir ev3.Direction) ev3.Direction {
-	if leftIntensity > 0 && !hasLeftEstimation {
-		estimatedIntensityLeft = leftIntensity
-		estimatedPositionLeft = pos
-	} else if currentIntensityLeft == 0 {
-		estimatedIntensityLeft = 0
-	}
-	firstIntensityLeft = 0
-	firstPositionLeft = 0
-	currentIntensityLeft = 0
-	currentPositionLeft = pos
-	hasLeftEstimation = false
-
-	if rightIntensity > 0 && !hasRightEstimation {
-		estimatedIntensityRight = rightIntensity
-		estimatedPositionRight = pos
-	} else if currentIntensityRight == 0 {
-		estimatedIntensityRight = 0
-	}
-	firstIntensityRight = 0
-	firstPositionRight = 0
-	currentIntensityRight = 0
-	currentPositionRight = pos
-	hasRightEstimation = false
-
+func switchDirection(dir ev3.Direction) ev3.Direction {
+	maxIntensityLeft = 0
+	maxIntensityRight = 0
 	return ev3.ChangeDirection(dir)
 }
 
-func estimationIsOld(estimationPosition int, pos int) bool {
-	return abs(pos-estimationPosition) > config.VisionSpotWidth && abs(estimationPosition) > config.VisionSpotSearchWidth
-}
-
-func computeEstimatedPositionCorrection(firstPosition int, firstIntensity int, currentPosition int, currentIntensity int, pos int, intensity int) int {
-	risingPositionDelta := currentPosition - firstPosition
-	descendingPositionDelta := pos - currentPosition
-
-	if risingPositionDelta == 0 || descendingPositionDelta == 0 {
-		return 0
-	}
-
-	risingIntensityDelta := currentIntensity - firstIntensity
-	descendingIntensityDelta := currentIntensity - intensity
-
-	risingRatio := risingIntensityDelta / risingPositionDelta
-	descendingRatio := descendingIntensityDelta / descendingPositionDelta
-
-	if risingRatio >= descendingRatio || descendingRatio == 0 {
-		return 0
-	}
-
-	return risingPositionDelta - (risingPositionDelta * risingRatio / descendingRatio)
-}
-
 // Process processes IR sensor data
-func Process(millis int, d ev3.Direction, pos int, leftValue int, rightValue int) (intensity int, angle int, dir ev3.Direction) {
+func Process(now int, d ev3.Direction, pos int, leftValue int, rightValue int) (intensity int, angle int, dir ev3.Direction) {
 	leftIntensity, rightIntensity := irValuesToIntensity(leftValue, rightValue, pos)
+	if leftIntensity > maxIntensityLeft {
+		maxIntensityLeft = leftIntensity
+	}
+	if rightIntensity > maxIntensityRight {
+		maxIntensityRight = rightIntensity
+	}
+	recordPoint(now, leftIntensity, positionToAngle(pos, ev3.Left))
+	recordPoint(now, rightIntensity, positionToAngle(pos, ev3.Right))
 
 	if d == ev3.Right && pos >= config.VisionThresholdPosition {
-		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
+		fmt.Fprintln(os.Stderr, "VISION SWITCH RIGHT")
+		dir = switchDirection(d)
 	} else if d == ev3.Left && pos <= -config.VisionThresholdPosition {
-		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
-	} else if hasLeftEstimation && (rightIntensity == 0 || hasRightEstimation) && estimationIsOld(estimatedPositionLeft, pos) {
-		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
-	} else if hasRightEstimation && (leftIntensity == 0 || hasLeftEstimation) && estimationIsOld(estimatedPositionRight, pos) {
-		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
-	} else if (hasLeftEstimation || hasRightEstimation) && leftIntensity == 0 && rightIntensity == 0 {
-		dir = switchDirection(pos, leftIntensity, rightIntensity, d)
+		fmt.Fprintln(os.Stderr, "VISION SWITCH LEFT")
+		dir = switchDirection(d)
+	} else if hasSeenLeft() && (leftIntensity == 0 || leftIntensity <= maxIntensityLeft-(maxIntensityLeft/config.VisionEstimateReductionRange)) {
+		dir = switchDirection(d)
+	} else if hasSeenRight() && (rightIntensity == 0 || rightIntensity <= maxIntensityRight-(maxIntensityRight/config.VisionEstimateReductionRange)) {
+		dir = switchDirection(d)
 	} else {
 		dir = d
-
-		if leftIntensity > currentIntensityLeft {
-			if firstIntensityLeft == 0 {
-				firstIntensityLeft = leftIntensity
-				firstPositionLeft = pos
-			}
-			currentIntensityLeft = leftIntensity
-			currentPositionLeft = pos
-		} else if leftIntensity < currentIntensityLeft-(currentIntensityLeft/config.VisionEstimateReductionRange) {
-			estimatedIntensityLeft = currentIntensityLeft
-			positionCorrection := computeEstimatedPositionCorrection(abs(firstPositionLeft), firstIntensityLeft, currentPositionLeft, currentIntensityLeft, abs(pos), leftIntensity)
-			estimatedPositionLeft = currentPositionLeft - (int(dir) * positionCorrection)
-			hasLeftEstimation = true
-		}
-
-		if rightIntensity > currentIntensityRight {
-			if firstIntensityRight == 0 {
-				firstIntensityRight = rightIntensity
-				firstPositionRight = pos
-			}
-			currentIntensityRight = rightIntensity
-			currentPositionRight = pos
-		} else if rightIntensity < currentIntensityRight-(currentIntensityRight/config.VisionEstimateReductionRange) {
-			estimatedIntensityRight = currentIntensityRight
-			positionCorrection := computeEstimatedPositionCorrection(abs(firstPositionRight), firstIntensityRight, currentPositionRight, currentIntensityRight, abs(pos), rightIntensity)
-			estimatedPositionRight = currentPositionRight - (int(dir) * positionCorrection)
-			hasRightEstimation = true
-		}
-
-		// intens, ang, _ := estimate(dir)
-		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, leftValue, rightValue, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
-		// fmt.Fprintln(os.Stderr, "VISION", dir, pos, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
 	}
 
-	return estimate(dir)
+	intens, ang, _ := estimate(now, dir)
+	// fmt.Fprintln(os.Stderr, "VISION", dir, pos, leftValue, rightValue, "- I", leftIntensity, rightIntensity, "- L", currentIntensityLeft, currentPositionLeft, "- R", currentIntensityRight, currentPositionRight, "- RES", intens, ang)
+	fmt.Fprintln(os.Stderr, "VISION", dir, pos, "- I", leftIntensity, rightIntensity, "-P", hasSeenLeft(), hasSeenRight(), "- RES", intens, ang)
+
+	return estimate(now, dir)
 }
