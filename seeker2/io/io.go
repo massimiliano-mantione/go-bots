@@ -9,7 +9,7 @@ import (
 )
 
 func colorIsOut(v int) bool {
-	return v > 5
+	return v > config.ColorIsOut
 }
 
 var devs *ev3.Devices
