@@ -1,6 +1,6 @@
 package config
 
-const ColorIsOut = 5
+const ColorIsOut = 25
 
 const ForwardAcceleration = 10000 / 600
 const ReverseAcceleration = 10000 / 1
@@ -36,7 +36,7 @@ const BackMoveMillis = 5
 const BackTurn3Speed = 3700
 const BackTurn3Millis = 1600
 
-const CircleFindBorderMillis = 150
+const CircleFindBorderMillis = 80
 const CircleFindBorderOuterSpeed = MaxSpeed * 80 / 100
 const CircleFindBorderInnerSpeed = MaxSpeed * 40 / 100
 const CircleFindBorderOuterSpeedSlowLeft = MaxSpeed * 28 / 100
@@ -45,20 +45,22 @@ const CircleFindBorderOuterSpeedSlowRight = MaxSpeed * 28 / 100
 const CircleFindBorderInnerSpeedSlowRight = MaxSpeed * 18 / 100
 const CircleMillis = 2500
 const CircleOuterSpeed = MaxSpeed
-const CircleInnerSpeedLeft = 3000
+const CircleInnerSpeedLeft = 2800
 const CircleInnerSpeedRight = 3000
-const CircleAdjustInnerMax = 500
+const CircleAdjustInnerMax = 600
 const CircleSpiralMillis = 450
 const CircleSpiralOuterSpeed = MaxSpeed
 const CircleSpiralInnerSpeed = 1500
 
-const GoForwardMillis = 700
+const GoForwardMillis = 800
 const GoForwardSpeed = MaxSpeed
 
 // const GoForwardTurnMillis = 600
 const GoForwardTurnMillis = 0
 const GoForwardTurnOuterSpeed = MaxSpeed
 const GoForwardTurnInnerSpeed = 1000
+const GoForwardAdjustmentStep = 1500
+const GoForwardAdjustmentSteps = 5
 
 const TurnBackPreMoveMillis = 400
 const TurnBackPreMoveSpeed = MaxSpeed
@@ -68,8 +70,8 @@ const TurnBackInnerSpeed = -MaxSpeed
 const TurnBackMoveMillis = 800
 const TurnBackMoveSpeed = MaxSpeed
 
-const TrackOnly1SensorOuterSpeed = MaxSpeed
-const TrackOnly1SensorInnerSpeed = 8000
+const TrackOnly1SensorOuterSpeed = 8000
+const TrackOnly1SensorInnerSpeed = 6000
 const TrackSpeed = MaxSpeed
-const TrackCenterZone = 10
+const TrackCenterZone = 20
 const TrackDifferenceCoefficent = 50

@@ -33,8 +33,11 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 	}
 }
 
+var adjustForward int
+
 func chooseStrategy(start int) {
 	strategy := seekStrategy
+	adjustForward = 0
 	strategyIsGoForward := false
 	var dir ev3.Direction = ev3.Left
 	leds(0, 0, 0, 0)
@@ -54,16 +57,24 @@ func chooseStrategy(start int) {
 				return
 			} else if k.Key == ui.Left {
 				dir = ev3.Left
-				strategy = circle
-				strategyIsGoForward = false
-				leds(255, 0, 255, 0)
-				fmt.Fprintln(os.Stderr, "chooseStrategy circle left")
+				strategy = goForward
+				strategyIsGoForward = true
+				adjustForward++
+				if adjustForward > config.GoForwardAdjustmentSteps {
+					adjustForward = 0
+				}
+				leds(255, adjustForward*255/config.GoForwardAdjustmentSteps, 0, 0)
+				fmt.Fprintln(os.Stderr, "chooseStrategy forward adjusted left", adjustForward)
 			} else if k.Key == ui.Right {
 				dir = ev3.Right
-				strategy = circle
-				strategyIsGoForward = false
-				leds(0, 255, 0, 255)
-				fmt.Fprintln(os.Stderr, "chooseStrategy circle right")
+				strategy = goForward
+				strategyIsGoForward = true
+				adjustForward++
+				if adjustForward > config.GoForwardAdjustmentSteps {
+					adjustForward = 0
+				}
+				leds(adjustForward*255/config.GoForwardAdjustmentSteps, 255, 0, 0)
+				fmt.Fprintln(os.Stderr, "chooseStrategy forward adjusted right", adjustForward)
 			} else if k.Key == ui.Up {
 				if strategyIsGoForward {
 					strategy = seekStrategy
@@ -73,6 +84,7 @@ func chooseStrategy(start int) {
 				} else {
 					strategy = goForward
 					strategyIsGoForward = true
+					adjustForward = 0
 					if dir == ev3.Left {
 						leds(255, 0, 0, 0)
 						fmt.Fprintln(os.Stderr, "chooseStrategy forward left")
@@ -215,7 +227,13 @@ func goForward(start int, dir ev3.Direction) {
 				return
 			}
 
-			speed(config.GoForwardSpeed, config.GoForwardSpeed)
+			if dir == ev3.Left {
+				speed(config.GoForwardSpeed-(adjustForward*config.GoForwardAdjustmentStep), config.GoForwardSpeed)
+			} else if dir == ev3.Right {
+				speed(config.GoForwardSpeed, config.GoForwardSpeed-(adjustForward*config.GoForwardAdjustmentStep))
+			} else {
+				speed(config.GoForwardSpeed, config.GoForwardSpeed)
+			}
 
 			ledsFromData(d)
 			cmd()
