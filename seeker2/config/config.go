@@ -1,6 +1,6 @@
 package config
 
-const ColorIsOut = 20
+const ColorIsOut = 30
 
 const ForwardAcceleration = 10000 / 200
 const ReverseAcceleration = 10000 / 1
