@@ -35,13 +35,13 @@ func Init(d chan<- logic.Data, s time.Time) {
 	start = s
 
 	// Ir Left
-	ev3.CheckDriver(devs.In2, ev3.DriverIr, ev3.In1)
+	ev3.CheckDriver(devs.In2, ev3.DriverIr, ev3.In2)
 	// Ir FrontLeft
-	ev3.CheckDriver(devs.In4, ev3.DriverIr, ev3.In2)
+	ev3.CheckDriver(devs.In4, ev3.DriverIr, ev3.In4)
 	// Ir FrontRight
-	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In3)
+	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
 	// Ir Right
-	ev3.CheckDriver(devs.In3, ev3.DriverIr, ev3.In4)
+	ev3.CheckDriver(devs.In3, ev3.DriverIr, ev3.In3)
 
 	// A front Left
 	ev3.CheckDriver(devs.OutA, ev3.DriverRcxMotor, ev3.OutA)
