@@ -95,10 +95,10 @@ func Init(d chan<- logic.Data, s time.Time) {
 	ml.Value = 0
 	mr.Sync()
 	ml.Sync()
+	ev3.RunCommand(devs.OutB, ev3.CmdReset)
 	ev3.RunCommand(devs.OutC, ev3.CmdReset)
-	ev3.RunCommand(devs.OutD, ev3.CmdReset)
+	ev3.RunCommand(devs.OutB, ev3.CmdRunDirect)
 	ev3.RunCommand(devs.OutC, ev3.CmdRunDirect)
-	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
 
 	// front Left
 	mfl.Value = 0
@@ -121,8 +121,8 @@ func ProcessCommand(c *logic.Commands) {
 	currentMillis = c.Millis
 	lastMillis = currentMillis
 
-	mlValue := speedL / 100
-	mrValue := speedR / 100
+	mlValue := -c.SpeedLeft / 100
+	mrValue := -c.SpeedRight / 100
 	if mlValue > 100 {
 		mlValue = 100
 	}
