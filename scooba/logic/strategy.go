@@ -24,7 +24,7 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 			} else {
 				leds(0, 0, intensity, intensity)
 			}
-			cmd()
+			startCmd()
 		case k := <-keys:
 			if checkDone(k) {
 				return
@@ -34,12 +34,11 @@ func pauseBeforeBegin(start int, strategy func(int, ev3.Direction), dir ev3.Dire
 }
 
 func chooseStrategy(start int) {
-	strategy := seekMoving
-	strategyIsGoForward := false
+	strategy := goForward
 	var dir ev3.Direction = ev3.Left
 	leds(0, 0, 0, 0)
 	speed(0, 0)
-	cmd()
+	startCmd()
 	fmt.Fprintln(os.Stderr, "chooseStrategy START")
 
 	for {
@@ -47,7 +46,7 @@ func chooseStrategy(start int) {
 		case d := <-data:
 			handleTime(d, start)
 			speed(0, 0)
-			cmd()
+			startCmd()
 		case k := <-keys:
 			checkQuit(k)
 			if k.Key == ui.Enter {
@@ -55,34 +54,23 @@ func chooseStrategy(start int) {
 				return
 			} else if k.Key == ui.Left {
 				dir = ev3.Left
-				strategyIsGoForward = false
 				leds(255, 0, 255, 0)
 				fmt.Fprintln(os.Stderr, "chooseStrategy circle left")
 			} else if k.Key == ui.Right {
 				dir = ev3.Right
-				strategyIsGoForward = false
 				leds(0, 255, 0, 255)
 				fmt.Fprintln(os.Stderr, "chooseStrategy circle right")
 			} else if k.Key == ui.Up {
-				if strategyIsGoForward {
-					strategy = seekMoving
-					strategyIsGoForward = false
-					leds(0, 0, 0, 0)
-					fmt.Fprintln(os.Stderr, "chooseStrategy seek")
+				strategy = goForward
+				if dir == ev3.Left {
+					leds(255, 0, 0, 0)
+					fmt.Fprintln(os.Stderr, "chooseStrategy forward left")
 				} else {
-					strategy = goForward
-					strategyIsGoForward = true
-					if dir == ev3.Left {
-						leds(255, 0, 0, 0)
-						fmt.Fprintln(os.Stderr, "chooseStrategy forward left")
-					} else {
-						leds(0, 255, 0, 0)
-						fmt.Fprintln(os.Stderr, "chooseStrategy forward right")
-					}
+					leds(0, 255, 0, 0)
+					fmt.Fprintln(os.Stderr, "chooseStrategy forward right")
 				}
 			} else if k.Key == ui.Down {
 				strategy = turnBack
-				strategyIsGoForward = false
 				if dir == ev3.Left {
 					leds(0, 0, 255, 0)
 					fmt.Fprintln(os.Stderr, "chooseStrategy back left")
@@ -92,7 +80,7 @@ func chooseStrategy(start int) {
 				}
 			}
 			speed(0, 0)
-			cmd()
+			startCmd()
 		}
 	}
 }
@@ -148,9 +136,6 @@ func goForward(start int, dir ev3.Direction) {
 			}
 		}
 	}
-
-	fmt.Fprintln(os.Stderr, "goForward done", now, dir)
-	go seekMoving(now, ev3.ChangeDirection(dir))
 }
 
 func turnBack(start int, dir ev3.Direction) {
@@ -226,7 +211,4 @@ func turnBack(start int, dir ev3.Direction) {
 			}
 		}
 	}
-
-	fmt.Fprintln(os.Stderr, "turnBack done", now, dir)
-	go seekTurning(now, dir)
 }

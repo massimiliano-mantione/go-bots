@@ -3,7 +3,6 @@ package logic
 import (
 	"fmt"
 	"go-bots/ev3"
-	"go-bots/scooba/config"
 	"go-bots/ui"
 	"os"
 )
@@ -28,8 +27,17 @@ func abs(v int) int {
 	return v
 }
 
+// FrontActive decide if move mfl and mfr
+var FrontActive bool
+
 func cmd() {
 	commandProcessor(&c)
+	FrontActive = true
+}
+
+func startCmd() {
+	commandProcessor(&c)
+	FrontActive = false
 }
 
 func handleTime(d Data, start int) (now int, elapsed int) {
@@ -66,17 +74,8 @@ func leds(leftGreen int, rightGreen int, leftRed int, rightRed int) {
 }
 
 func ledsFromData(d Data) {
-	green := 255 * d.VisionIntensity / config.VisionMaxIntensity
-	if d.VisionAngle > 0 {
-		c.LedLeftGreen = normalizeLedValue(green - (green * d.VisionAngle / config.VisionMaxAngle))
-		c.LedRightGreen = normalizeLedValue(green)
-	} else if d.VisionAngle < 0 {
-		c.LedLeftGreen = normalizeLedValue(green)
-		c.LedRightGreen = normalizeLedValue(green + (green * d.VisionAngle / config.VisionMaxAngle))
-	} else {
-		c.LedLeftGreen = normalizeLedValue(green)
-		c.LedRightGreen = normalizeLedValue(green)
-	}
+	c.LedLeftGreen = 255
+	c.LedRightGreen = 255
 }
 
 func checkDone(k ui.KeyEvent) bool {

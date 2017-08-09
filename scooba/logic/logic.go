@@ -13,8 +13,6 @@ type Data struct {
 	IrValueFrontLeft  int
 	IrValueFrontRight int
 	IrValueRight      int
-	VisionIntensity   int
-	VisionAngle       int
 }
 
 // Commands contains commands for motors and leds
@@ -26,6 +24,7 @@ type Commands struct {
 	LedRightGreen int
 	LedLeftRed    int
 	LedLeftGreen  int
+	FrontActive   bool
 }
 
 var data <-chan Data

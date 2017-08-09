@@ -149,11 +149,17 @@ func ProcessCommand(c *logic.Commands) {
 	ledRG.Sync()
 	ledRR.Sync()
 
-	mfl.Value = -config.FrontWheelsSpeed
-	mfr.Value = config.FrontWheelsSpeed
-
-	mfl.Sync()
-	mfr.Sync()
+	if c.FrontActive {
+		mfl.Value = -config.FrontWheelsSpeed
+		mfr.Value = config.FrontWheelsSpeed
+		mfl.Sync()
+		mfr.Sync()
+	} else {
+		mfl.Value = 0
+		mfr.Value = 0
+		mfl.Sync()
+		mfr.Sync()
+	}
 }
 
 // Loop contains the io loop
