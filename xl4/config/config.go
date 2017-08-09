@@ -1,6 +1,6 @@
 package config
 
-const ColorIsOut = 25
+const ColorIsOut = 101
 
 const ForwardAcceleration = 10000 / 600
 const ReverseAcceleration = 10000 / 1
@@ -52,7 +52,7 @@ const CircleSpiralMillis = 450
 const CircleSpiralOuterSpeed = MaxSpeed
 const CircleSpiralInnerSpeed = 1500
 
-const GoForwardMillis = 800
+const GoForwardMillis = 30000
 const GoForwardSpeed = MaxSpeed
 
 // const GoForwardTurnMillis = 600

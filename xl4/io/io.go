@@ -39,11 +39,11 @@ func Init(d chan<- logic.Data, s time.Time) {
 	start = s
 
 	// IR left
-	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
+	// ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
 	// Color left
 	ev3.CheckDriver(devs.In2, ev3.DriverColor, ev3.In2)
 	// IR right
-	ev3.CheckDriver(devs.In3, ev3.DriverIr, ev3.In3)
+	// ev3.CheckDriver(devs.In3, ev3.DriverIr, ev3.In3)
 	// Color right
 	ev3.CheckDriver(devs.In4, ev3.DriverColor, ev3.In4)
 
@@ -56,9 +56,9 @@ func Init(d chan<- logic.Data, s time.Time) {
 	// Left back direct
 	ev3.CheckDriver(devs.OutD, ev3.DriverRcxMotor, ev3.OutD)
 
-	ev3.SetMode(devs.In1, ev3.IrModeProx)
+	// ev3.SetMode(devs.In1, ev3.IrModeProx)
 	ev3.SetMode(devs.In2, ev3.ColorModeReflect)
-	ev3.SetMode(devs.In3, ev3.IrModeProx)
+	// ev3.SetMode(devs.In3, ev3.IrModeProx)
 	ev3.SetMode(devs.In4, ev3.ColorModeReflect)
 
 	ev3.RunCommand(devs.OutA, ev3.CmdStop)
@@ -66,8 +66,8 @@ func Init(d chan<- logic.Data, s time.Time) {
 	ev3.RunCommand(devs.OutC, ev3.CmdStop)
 	ev3.RunCommand(devs.OutD, ev3.CmdStop)
 
-	irR = ev3.OpenByteR(devs.In3, ev3.BinData)
-	irL = ev3.OpenByteR(devs.In1, ev3.BinData)
+	// irR = ev3.OpenByteR(devs.In3, ev3.BinData)
+	// irL = ev3.OpenByteR(devs.In1, ev3.BinData)
 	colR = ev3.OpenByteR(devs.In4, ev3.BinData)
 	colL = ev3.OpenByteR(devs.In2, ev3.BinData)
 	mr2 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
@@ -159,8 +159,8 @@ func Loop() {
 
 		colR.Sync()
 		colL.Sync()
-		irR.Sync()
-		irL.Sync()
+		// irR.Sync()
+		// irL.Sync()
 		// fmt.Fprintln(os.Stderr, "DATA", irL.Value, irR.Value)
 		// intensity, angle := vision.Process(millis, irL.Value, irR.Value)
 
@@ -171,8 +171,8 @@ func Loop() {
 			CornerLeftIsOut:  colorIsOut(colL.Value),
 			CornerRight:      colR.Value,
 			CornerLeft:       colL.Value,
-			IrLeftValue:      irL.Value,
-			IrRightValue:     irR.Value,
+			IrLeftValue:      100,
+			IrRightValue:     100,
 		}
 	}
 }
