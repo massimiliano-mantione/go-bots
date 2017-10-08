@@ -85,11 +85,48 @@ func close() {
 	irR.Close()
 }
 
-func move(left int, right int) {
-	motorL1.Value = -left / 1000
-	motorL2.Value = left / 1000
-	motorR1.Value = -right / 1000
-	motorR2.Value = -right / 1000
+var lastMoveTicks int
+var lastSpeedLeft int
+var lastSpeedRight int
+
+const accelPerTicks int = 1
+
+func move(left int, right int, now int) {
+	ticks := now - lastMoveTicks
+	lastMoveTicks = now
+
+	nextSpeedLeft := lastSpeedLeft
+	nextSpeedRight := lastSpeedRight
+
+	if left > nextSpeedLeft {
+		nextSpeedLeft += (ticks * accelPerTicks)
+		if nextSpeedLeft > left {
+			nextSpeedLeft = left
+		}
+	} else if left < nextSpeedLeft {
+		nextSpeedLeft -= (ticks * accelPerTicks)
+		if nextSpeedLeft < left {
+			nextSpeedLeft = left
+		}
+	}
+	if right > nextSpeedRight {
+		nextSpeedRight += (ticks * accelPerTicks)
+		if nextSpeedRight > right {
+			nextSpeedRight = right
+		}
+	} else if right < nextSpeedRight {
+		nextSpeedRight -= (ticks * accelPerTicks)
+		if nextSpeedRight < right {
+			nextSpeedRight = right
+		}
+	}
+	lastSpeedLeft = nextSpeedLeft
+	lastSpeedRight = nextSpeedRight
+
+	motorL1.Value = -nextSpeedLeft / 10000
+	motorL2.Value = nextSpeedLeft / 10000
+	motorR1.Value = -nextSpeedRight / 10000
+	motorR2.Value = -nextSpeedRight / 10000
 
 	motorL1.Sync()
 	motorL2.Sync()
@@ -110,7 +147,7 @@ func durationToTicks(d time.Duration) int {
 func timespanAsTicks(start time.Time, end time.Time) int {
 	return durationToTicks(end.Sub(start))
 }
-func now() int {
+func currentTicks() int {
 	return timespanAsTicks(initializationTime, time.Now())
 }
 func ticksToMillis(ticks int) int {
@@ -125,14 +162,22 @@ func main() {
 	initialize()
 	defer close()
 
-	start := now()
+	start := currentTicks()
 	for {
-		ticks := now()
-		if ticksToMillis(ticks-start) > 1000 {
+		now := currentTicks()
+		if ticksToMillis(now-start) > 100 {
 			break
 		}
 		read()
-		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
-		move(100000, 100000)
+		move(0, 0, now)
+	}
+	start = currentTicks()
+	for {
+		now := currentTicks()
+		if ticksToMillis(now-start) > 1000 {
+			break
+		}
+		read()
+		move(1000000, 1000000, now)
 	}
 }
