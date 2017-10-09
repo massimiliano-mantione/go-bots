@@ -46,17 +46,28 @@ func initialize() {
 	ev3.RunCommand(devs.OutC, ev3.CmdStop)
 	ev3.RunCommand(devs.OutD, ev3.CmdStop)
 
-	// Put motors in direct mode
-	ev3.RunCommand(devs.OutA, ev3.CmdRunDirect)
-	ev3.RunCommand(devs.OutB, ev3.CmdRunDirect)
-	ev3.RunCommand(devs.OutC, ev3.CmdRunDirect)
-	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
-
 	// Open motors
 	motorL1 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
 	motorL2 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
 	motorR1 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
 	motorR2 = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
+
+	// Reset motor speed
+	motorL1.Value = 0
+	motorL2.Value = 0
+	motorR1.Value = 0
+	motorR2.Value = 0
+
+	motorL1.Sync()
+	motorL2.Sync()
+	motorR1.Sync()
+	motorR2.Sync()
+
+	// Put motors in direct mode
+	ev3.RunCommand(devs.OutA, ev3.CmdRunDirect)
+	ev3.RunCommand(devs.OutB, ev3.CmdRunDirect)
+	ev3.RunCommand(devs.OutC, ev3.CmdRunDirect)
+	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
 
 	// Open sensors
 	irL = ev3.OpenByteR(devs.In1, ev3.BinData)
@@ -89,7 +100,7 @@ var lastMoveTicks int
 var lastSpeedLeft int
 var lastSpeedRight int
 
-const accelPerTicks int = 1
+const accelPerTicks int = 5
 
 func move(left int, right int, now int) {
 	ticks := now - lastMoveTicks
@@ -97,25 +108,27 @@ func move(left int, right int, now int) {
 
 	nextSpeedLeft := lastSpeedLeft
 	nextSpeedRight := lastSpeedRight
+	delta := ticks * accelPerTicks
+	// delta := ticks * ticks * accelPerTicks
 
 	if left > nextSpeedLeft {
-		nextSpeedLeft += (ticks * accelPerTicks)
+		nextSpeedLeft += delta
 		if nextSpeedLeft > left {
 			nextSpeedLeft = left
 		}
 	} else if left < nextSpeedLeft {
-		nextSpeedLeft -= (ticks * accelPerTicks)
+		nextSpeedLeft -= delta
 		if nextSpeedLeft < left {
 			nextSpeedLeft = left
 		}
 	}
 	if right > nextSpeedRight {
-		nextSpeedRight += (ticks * accelPerTicks)
+		nextSpeedRight += delta
 		if nextSpeedRight > right {
 			nextSpeedRight = right
 		}
 	} else if right < nextSpeedRight {
-		nextSpeedRight -= (ticks * accelPerTicks)
+		nextSpeedRight -= delta
 		if nextSpeedRight < right {
 			nextSpeedRight = right
 		}
