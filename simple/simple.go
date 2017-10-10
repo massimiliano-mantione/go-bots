@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-bots/ev3"
+	"go-bots/simple/config"
 	"os"
 	"time"
 )
@@ -34,7 +35,7 @@ func initialize() {
 	ev3.CheckDriver(devs.In3, ev3.DriverIr, ev3.In3)
 	ev3.CheckDriver(devs.In4, ev3.DriverIr, ev3.In4)
 
-	// Set sensors mode
+	// Set sensors mode (for remote control)
 	ev3.SetMode(devs.In1, ev3.IrModeProx)
 	ev3.SetMode(devs.In2, ev3.IrModeProx)
 	ev3.SetMode(devs.In3, ev3.IrModeProx)
@@ -175,22 +176,59 @@ func main() {
 	initialize()
 	defer close()
 
-	start := currentTicks()
+	/*
+		start := currentTicks()
+		for {
+			now := currentTicks()
+			if ticksToMillis(now-start) > 100 {
+				break
+			}
+			read()
+			move(0, 0, now)
+		}
+		start = currentTicks()
+		for {
+			now := currentTicks()
+			if ticksToMillis(now-start) > 1000 {
+				break
+			}
+			read()
+			move(config.MaxSpeed, config.MaxSpeed, now)
+	*/
+	track(ev3.Right)
+}
+
+func track(dir ev3.Direction) {
 	for {
 		now := currentTicks()
-		if ticksToMillis(now-start) > 100 {
-			break
-		}
 		read()
-		move(0, 0, now)
-	}
-	start = currentTicks()
-	for {
-		now := currentTicks()
-		if ticksToMillis(now-start) > 1000 {
-			break
+		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
+
+		if irL.Value < config.MaxIrValue {
+			move(-config.TrackTurnSpeed, config.TrackTurnSpeed, now)
+			dir = ev3.Left
+			print("LEFT")
+		} else if irR.Value < config.MaxIrValue {
+			move(config.TrackTurnSpeed, -config.TrackTurnSpeed, now)
+			dir = ev3.Right
+			print("RIGHT")
+		} else if irFL.Value < config.MaxIrValue {
+			move(config.TrackSpeed, config.TrackSpeed, now)
+			dir = ev3.Left
+			print("FRONT LEFT")
+		} else if irFR.Value < config.MaxIrValue {
+			move(config.TrackSpeed, config.TrackSpeed, now)
+			dir = ev3.Right
+			print("FRONT RIGHT")
+		} else {
+			if dir == ev3.Right {
+				move(config.SeekTurnSpeed, -config.SeekTurnSpeed, now)
+				print("SEEK RIGHT")
+			} else if dir == ev3.Left {
+				move(-config.SeekTurnSpeed, config.SeekTurnSpeed, now)
+				print("SEEK LEFT")
+			}
+			print("SEEK NONE")
 		}
-		read()
-		move(1000000, 1000000, now)
 	}
 }
