@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-bots/ev3"
 	"go-bots/simple/config"
+	"log"
 	"os"
 	"time"
 )
@@ -12,6 +13,92 @@ var devs *ev3.Devices
 var initializationTime time.Time
 var motorL1, motorL2, motorR1, motorR2 *ev3.Attribute
 var irL, irFL, irFR, irR *ev3.Attribute
+var irRemote1, irRemote2, irRemote3, irRemote4 *ev3.Attribute
+
+func closeIrProx() {
+	if irL != nil {
+		irL.Close()
+		irL = nil
+	}
+	if irFL != nil {
+		irFL.Close()
+		irFL = nil
+	}
+	if irFR != nil {
+		irFR.Close()
+		irFR = nil
+	}
+	if irR != nil {
+		irR.Close()
+		irR = nil
+	}
+}
+
+func closeIrRemote() {
+	if irRemote1 != nil {
+		irRemote1.Close()
+		irRemote1 = nil
+	}
+	if irRemote2 != nil {
+		irRemote2.Close()
+		irRemote2 = nil
+	}
+	if irRemote3 != nil {
+		irRemote3.Close()
+		irRemote3 = nil
+	}
+	if irRemote4 != nil {
+		irRemote4.Close()
+		irRemote4 = nil
+	}
+}
+
+func setIrProxMode() {
+	closeIrRemote()
+
+	ev3.SetMode(devs.In1, ev3.IrModeProx)
+	ev3.SetMode(devs.In2, ev3.IrModeProx)
+	ev3.SetMode(devs.In3, ev3.IrModeProx)
+	ev3.SetMode(devs.In4, ev3.IrModeProx)
+
+	irL = ev3.OpenByteR(devs.In1, ev3.BinData)
+	irFL = ev3.OpenByteR(devs.In2, ev3.BinData)
+	irFR = ev3.OpenByteR(devs.In3, ev3.BinData)
+	irR = ev3.OpenByteR(devs.In4, ev3.BinData)
+}
+
+func setIrRemoteMode(remoteChannel int) {
+	closeIrProx()
+
+	ev3.SetMode(devs.In1, ev3.IrModeRemote)
+	ev3.SetMode(devs.In2, ev3.IrModeRemote)
+	ev3.SetMode(devs.In3, ev3.IrModeRemote)
+	ev3.SetMode(devs.In4, ev3.IrModeRemote)
+
+	if remoteChannel == 1 {
+		irRemote1 = ev3.OpenTextR(devs.In1, ev3.Value0)
+		irRemote2 = ev3.OpenTextR(devs.In2, ev3.Value0)
+		irRemote3 = ev3.OpenTextR(devs.In3, ev3.Value0)
+		irRemote4 = ev3.OpenTextR(devs.In4, ev3.Value0)
+	} else if remoteChannel == 2 {
+		irRemote1 = ev3.OpenTextR(devs.In1, ev3.Value1)
+		irRemote2 = ev3.OpenTextR(devs.In2, ev3.Value1)
+		irRemote3 = ev3.OpenTextR(devs.In3, ev3.Value1)
+		irRemote4 = ev3.OpenTextR(devs.In4, ev3.Value1)
+	} else if remoteChannel == 3 {
+		irRemote1 = ev3.OpenTextR(devs.In1, ev3.Value2)
+		irRemote2 = ev3.OpenTextR(devs.In2, ev3.Value2)
+		irRemote3 = ev3.OpenTextR(devs.In3, ev3.Value2)
+		irRemote4 = ev3.OpenTextR(devs.In4, ev3.Value2)
+	} else if remoteChannel == 4 {
+		irRemote1 = ev3.OpenTextR(devs.In1, ev3.Value3)
+		irRemote2 = ev3.OpenTextR(devs.In2, ev3.Value3)
+		irRemote3 = ev3.OpenTextR(devs.In3, ev3.Value3)
+		irRemote4 = ev3.OpenTextR(devs.In4, ev3.Value3)
+	} else {
+		quit("Invalid remote channel number", remoteChannel)
+	}
+}
 
 func initialize() {
 	initializationTime = time.Now()
@@ -35,11 +122,8 @@ func initialize() {
 	ev3.CheckDriver(devs.In3, ev3.DriverIr, ev3.In3)
 	ev3.CheckDriver(devs.In4, ev3.DriverIr, ev3.In4)
 
-	// Set sensors mode (for remote control)
-	ev3.SetMode(devs.In1, ev3.IrModeProx)
-	ev3.SetMode(devs.In2, ev3.IrModeProx)
-	ev3.SetMode(devs.In3, ev3.IrModeProx)
-	ev3.SetMode(devs.In4, ev3.IrModeProx)
+	// Set sensors mode
+	setIrProxMode()
 
 	// Stop motors
 	ev3.RunCommand(devs.OutA, ev3.CmdStop)
@@ -69,12 +153,6 @@ func initialize() {
 	ev3.RunCommand(devs.OutB, ev3.CmdRunDirect)
 	ev3.RunCommand(devs.OutC, ev3.CmdRunDirect)
 	ev3.RunCommand(devs.OutD, ev3.CmdRunDirect)
-
-	// Open sensors
-	irL = ev3.OpenByteR(devs.In1, ev3.BinData)
-	irFL = ev3.OpenByteR(devs.In2, ev3.BinData)
-	irFR = ev3.OpenByteR(devs.In3, ev3.BinData)
-	irR = ev3.OpenByteR(devs.In4, ev3.BinData)
 }
 
 func close() {
@@ -90,11 +168,9 @@ func close() {
 	motorR1.Close()
 	motorR2.Close()
 
-	// Close sensors
-	irL.Close()
-	irFL.Close()
-	irFR.Close()
-	irR.Close()
+	// Close sensor values
+	closeIrProx()
+	closeIrRemote()
 }
 
 var lastMoveTicks int
@@ -155,6 +231,25 @@ func read() {
 	irR.Sync()
 }
 
+func readRemote() int {
+	irRemote1.Sync()
+	irRemote2.Sync()
+	irRemote3.Sync()
+	irRemote4.Sync()
+
+	result := 0
+	if irRemote1.Value != 0 {
+		result = irRemote1.Value
+	} else if irRemote2.Value != 0 {
+		result = irRemote2.Value
+	} else if irRemote3.Value != 0 {
+		result = irRemote3.Value
+	} else if irRemote4.Value != 0 {
+		result = irRemote4.Value
+	}
+	return result
+}
+
 func durationToTicks(d time.Duration) int {
 	return int(d / 1000)
 }
@@ -169,7 +264,12 @@ func ticksToMillis(ticks int) int {
 }
 
 func print(data ...interface{}) {
-	fmt.Fprintln(os.Stderr, data)
+	fmt.Fprintln(os.Stderr, data...)
+}
+
+func quit(data ...interface{}) {
+	close()
+	log.Fatalln(data...)
 }
 
 func main() {
@@ -195,7 +295,8 @@ func main() {
 			read()
 			move(config.MaxSpeed, config.MaxSpeed, now)
 	*/
-	track(ev3.Right)
+	testRemote()
+	// track(ev3.Right)
 }
 
 func track(dir ev3.Direction) {
@@ -229,6 +330,20 @@ func track(dir ev3.Direction) {
 				print("SEEK LEFT")
 			}
 			print("SEEK NONE")
+		}
+	}
+}
+
+func testRemote() {
+	setIrRemoteMode(1)
+
+	for {
+		now := currentTicks()
+
+		move(0, 0, now)
+		rem := readRemote()
+		if rem != 0 {
+			print("received", rem)
 		}
 	}
 }
