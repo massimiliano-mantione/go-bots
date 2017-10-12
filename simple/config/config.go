@@ -8,21 +8,31 @@ import (
 
 // Config data
 type Config struct {
-	MaxSpeed       int
-	TrackTurnSpeed int
-	SeekTurnSpeed  int
-	TrackSpeed     int
-	MaxIrValue     int
+	MaxSpeed             int
+	TrackTurnSpeed       int
+	SeekTurnSpeed        int
+	TrackSpeed           int
+	MaxIrValue           int
+	StrategyR1Time       int
+	StrategyS1Time       int
+	StrategyR2Time       int
+	StrategyS2Time       int
+	StrategyStraightTime int
 }
 
 // Default Config data
 func Default() Config {
 	return Config{
-		MaxSpeed:       1000000,
-		TrackTurnSpeed: 1000000 / 2,
-		SeekTurnSpeed:  1000000 / 2,
-		TrackSpeed:     1000000,
-		MaxIrValue:     80,
+		MaxSpeed:             1000000,
+		TrackTurnSpeed:       1000000 / 2,
+		SeekTurnSpeed:        1000000 / 2,
+		TrackSpeed:           1000000,
+		MaxIrValue:           0,
+		StrategyR1Time:       10000,
+		StrategyS1Time:       10000,
+		StrategyR2Time:       10000,
+		StrategyS2Time:       10000,
+		StrategyStraightTime: 1000000,
 	}
 }
 
