@@ -26,6 +26,8 @@ var motorL1, motorL2, motorR1, motorR2 *ev3.Attribute
 var irL, irFL, irFR, irR *ev3.Attribute
 var irRemote1, irRemote2, irRemote3, irRemote4 *ev3.Attribute
 
+var conf config.Config
+
 func closeIrProx() {
 	if irL != nil {
 		irL.Close()
@@ -289,28 +291,28 @@ func track(dir ev3.Direction) {
 		read()
 		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
-		if irL.Value < config.MaxIrValue {
-			move(-config.TrackTurnSpeed, config.TrackTurnSpeed, now)
+		if irL.Value < conf.MaxIrValue {
+			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, now)
 			dir = ev3.Left
 			print("LEFT")
-		} else if irR.Value < config.MaxIrValue {
-			move(config.TrackTurnSpeed, -config.TrackTurnSpeed, now)
+		} else if irR.Value < conf.MaxIrValue {
+			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed, now)
 			dir = ev3.Right
 			print("RIGHT")
-		} else if irFL.Value < config.MaxIrValue {
-			move(config.TrackSpeed, config.TrackSpeed, now)
+		} else if irFL.Value < conf.MaxIrValue {
+			move(conf.TrackSpeed, conf.TrackSpeed, now)
 			dir = ev3.Left
 			print("FRONT LEFT")
-		} else if irFR.Value < config.MaxIrValue {
-			move(config.TrackSpeed, config.TrackSpeed, now)
+		} else if irFR.Value < conf.MaxIrValue {
+			move(conf.TrackSpeed, conf.TrackSpeed, now)
 			dir = ev3.Right
 			print("FRONT RIGHT")
 		} else {
 			if dir == ev3.Right {
-				move(config.SeekTurnSpeed, -config.SeekTurnSpeed, now)
+				move(conf.SeekTurnSpeed, -conf.SeekTurnSpeed, now)
 				print("SEEK RIGHT")
 			} else if dir == ev3.Left {
-				move(-config.SeekTurnSpeed, config.SeekTurnSpeed, now)
+				move(-conf.SeekTurnSpeed, conf.SeekTurnSpeed, now)
 				print("SEEK LEFT")
 			}
 			print("SEEK NONE")
@@ -336,6 +338,8 @@ func main() {
 	handleSignals()
 	initialize()
 	defer close()
+
+	conf = config.Default()
 
 	/*
 		start := currentTicks()
