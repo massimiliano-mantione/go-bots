@@ -6,8 +6,19 @@ import (
 	"go-bots/simple/config"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
+
+func handleSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigs
+		quit("Terminated by signal", sig)
+	}()
+}
 
 var devs *ev3.Devices
 var initializationTime time.Time
@@ -322,6 +333,7 @@ func testRemote() {
 }
 
 func main() {
+	handleSignals()
 	initialize()
 	defer close()
 
