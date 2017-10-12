@@ -272,33 +272,6 @@ func quit(data ...interface{}) {
 	log.Fatalln(data...)
 }
 
-func main() {
-	initialize()
-	defer close()
-
-	/*
-		start := currentTicks()
-		for {
-			now := currentTicks()
-			if ticksToMillis(now-start) > 100 {
-				break
-			}
-			read()
-			move(0, 0, now)
-		}
-		start = currentTicks()
-		for {
-			now := currentTicks()
-			if ticksToMillis(now-start) > 1000 {
-				break
-			}
-			read()
-			move(config.MaxSpeed, config.MaxSpeed, now)
-	*/
-	testRemote()
-	// track(ev3.Right)
-}
-
 func track(dir ev3.Direction) {
 	for {
 		now := currentTicks()
@@ -346,4 +319,31 @@ func testRemote() {
 			print("received", rem)
 		}
 	}
+}
+
+func main() {
+	initialize()
+	defer close()
+
+	/*
+		start := currentTicks()
+		for {
+			now := currentTicks()
+			if ticksToMillis(now-start) > 100 {
+				break
+			}
+			read()
+			move(0, 0, now)
+		}
+		start = currentTicks()
+		for {
+			now := currentTicks()
+			if ticksToMillis(now-start) > 1000 {
+				break
+			}
+			read()
+			move(config.MaxSpeed, config.MaxSpeed, now)
+	*/
+	testRemote()
+	// track(ev3.Right)
 }
