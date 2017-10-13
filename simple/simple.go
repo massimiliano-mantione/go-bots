@@ -302,25 +302,22 @@ func chooseStrategy(channelNumber int) {
 		remoteValue := readRemote()
 
 		if remoteValue == 3 {
-			strategyDirection = strategyDirection + 1
-			if strategyDirection >= 1 {
-				strategyDirection = 1
-			}
+			strategyDirection = -1
 		} else if remoteValue == 4 {
-			strategyDirection = strategyDirection - 1
-			if strategyDirection <= -1 {
-				strategyDirection = -1
-			}
+			strategyDirection = 1
+		} else if remoteValue == 2 {
+			strategyDirection = 0
 		} else if remoteValue == 1 {
-			waitBegin(now)
+			waitBegin()
 			return
 		}
 		print(strategyDirection)
 	}
 }
 
-func waitBegin(start int) {
+func waitBegin() {
 	print("wait 5 seconds")
+	start := currentTicks()
 	for {
 		now := currentTicks()
 		elapsed := now - start
@@ -340,46 +337,64 @@ func strategy() {
 		move(0, 0, now)
 
 		if strategyDirection == -1 {
-			strategyLeft(now)
+			strategyLeft()
 		} else if strategyDirection == 0 {
 			strategyStraight()
 		} else if strategyDirection == 1 {
-			strategyRight(now)
+			strategyRight()
 		}
 	}
 }
 
-func strategyLeft(start int) {
+func strategyLeft() {
 	print("strategy left")
-	now := currentTicks()
-	elapsed := now - start
-	for elapsed < conf.StrategyR1Time {
+	startR1 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startR1 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Right)
 			return
 		}
-		move(-10, 1000000, now)
+		move(-10, conf.MaxSpeed, now)
 	}
-	for elapsed < conf.StrategyS1Time {
+	startS1 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startS1 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Right)
 			return
 		}
-		move(1000000, 1000000, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
-	for elapsed < conf.StrategyR2Time {
+	startR2 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startR2 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Right)
 			return
 		}
-		move(1000000, -10, now)
+		move(conf.MaxSpeed, -10, now)
 	}
-	for elapsed < conf.StrategyS2Time {
+	startS2 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startS2 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Right)
 			return
 		}
-		move(1000000, 1000000, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
 	track(ev3.Right)
 	return
@@ -397,43 +412,61 @@ func strategyStraight() {
 			track(ev3.Left)
 			return
 		}
-		move(1000000, 1000000, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
 	track(ev3.Left)
 	return
 }
 
-func strategyRight(start int) {
+func strategyRight() {
 	print("strategy right")
-	now := currentTicks()
-	elapsed := now - start
-	for elapsed < conf.StrategyR1Time {
+	startR1 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startR1 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Left)
 			return
 		}
-		move(1000000, -10, now)
+		move(conf.MaxSpeed, -10, now)
 	}
-	for elapsed < conf.StrategyS1Time {
+	startS1 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startS1 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Left)
 			return
 		}
-		move(1000000, 1000000, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
-	for elapsed < conf.StrategyR2Time {
+	startR2 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startR2 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Left)
 			return
 		}
-		move(-10, 1000000, now)
+		move(-10, conf.MaxSpeed, now)
 	}
-	for elapsed < conf.StrategyS2Time {
+	startS2 := currentTicks()
+	for {
+		now := currentTicks()
+		if now-startS2 >= conf.StrategyR1Time {
+			break
+		}
 		if checkVision() {
 			track(ev3.Left)
 			return
 		}
-		move(1000000, 1000000, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
 	track(ev3.Left)
 	return
@@ -444,7 +477,7 @@ func track(dir ev3.Direction) {
 	for {
 		now := currentTicks()
 		read()
-		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
+		// print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
 		if irL.Value < conf.MaxIrValue {
 			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, now)
@@ -469,8 +502,9 @@ func track(dir ev3.Direction) {
 			} else if dir == ev3.Left {
 				move(-conf.SeekTurnSpeed, conf.SeekTurnSpeed, now)
 				print("SEEK LEFT")
+			} else {
+				print("SEEK NONE")
 			}
-			print("SEEK NONE")
 		}
 	}
 }
@@ -516,6 +550,4 @@ func main() {
 			move(config.MaxSpeed, config.MaxSpeed, now)
 	*/
 	chooseStrategy(1)
-	// testRemote()
-	// track(ev3.Right)
 }
