@@ -145,9 +145,9 @@ func initialize() {
 	ev3.RunCommand(devs.OutD, ev3.CmdStop)
 
 	// Open motors
-	motorL1 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
-	motorL2 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
-	motorR1 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	motorL1 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
+	motorL2 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	motorR1 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
 	motorR2 = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
 
 	// Reset motor speed
@@ -226,9 +226,9 @@ func move(left int, right int, now int) {
 	lastSpeedLeft = nextSpeedLeft
 	lastSpeedRight = nextSpeedRight
 
-	motorL1.Value = -nextSpeedLeft / 10000
-	motorL2.Value = nextSpeedLeft / 10000
-	motorR1.Value = -nextSpeedRight / 10000
+	motorL1.Value = nextSpeedLeft / 10000
+	motorL2.Value = -nextSpeedLeft / 10000
+	motorR1.Value = nextSpeedRight / 10000
 	motorR2.Value = -nextSpeedRight / 10000
 
 	motorL1.Sync()
@@ -342,7 +342,7 @@ func strategy() {
 		if strategyDirection == -1 {
 			strategyLeft(now)
 		} else if strategyDirection == 0 {
-			strategyStraight(now)
+			strategyStraight()
 		} else if strategyDirection == 1 {
 			strategyRight(now)
 		}
@@ -385,11 +385,14 @@ func strategyLeft(start int) {
 	return
 }
 
-func strategyStraight(start int) {
+func strategyStraight() {
 	print("strategy straight")
-	now := currentTicks()
-	elapsed := now - start
-	for elapsed < conf.StrategyStraightTime {
+	start := currentTicks()
+	for {
+		now := currentTicks()
+		if now-start >= conf.StrategyStraightTime {
+			break
+		}
 		if checkVision() {
 			track(ev3.Left)
 			return
