@@ -1,6 +1,8 @@
 package ev3
 
 import (
+	"encoding/binary"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
@@ -626,4 +628,75 @@ func LeftTurnVersor(dir Direction) int {
 // RightTurnVersor is the right turn speeed coefficient
 func RightTurnVersor(dir Direction) int {
 	return -int(dir)
+}
+
+const keyUp = 103
+const keyDown = 108
+const keyLeft = 105
+const keyRight = 106
+const keyEnter = 28
+const keyBackspace = 14
+
+// Buttons contains the current state of buttons
+type Buttons struct {
+	Up    bool
+	Down  bool
+	Left  bool
+	Right bool
+	Enter bool
+	Back  bool
+	stop  chan bool
+}
+
+// OpenButtons starts listening for button changes
+func OpenButtons() *Buttons {
+	result := Buttons{}
+	result.stop = make(chan bool)
+
+	go func() {
+		buttonDev := "/dev/input/by-path/platform-gpio-keys.0-event"
+		f, err := os.OpenFile(buttonDev, os.O_RDONLY, 0666)
+		if err != nil {
+			log.Fatalln("Cannot open file", buttonDev, ":", err)
+		}
+
+		data := make(chan [16]byte)
+		go func() {
+			var event [16]byte
+			for {
+				n, err := f.Read(event[0:16])
+				if err != nil {
+					if err == io.EOF || err == io.ErrClosedPipe {
+						return
+					}
+					log.Fatalln("Error reading button events:", err)
+				}
+				if n != 16 {
+					log.Fatalln("Event length is not 16 bytes:", n)
+				}
+				data <- event
+			}
+		}()
+
+		for {
+			select {
+			case event := <-data:
+				eventType := binary.LittleEndian.Uint16(event[8:])
+				eventCode := binary.LittleEndian.Uint16(event[10:])
+				eventValue := binary.LittleEndian.Uint32(event[12:])
+				log.Println("Event", eventType, eventCode, eventValue)
+			case <-result.stop:
+				f.Close()
+				return
+			}
+		}
+
+	}()
+
+	return &result
+}
+
+// Close stops listening for button changes
+func (b *Buttons) Close() {
+	b.stop <- true
 }
