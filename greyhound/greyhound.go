@@ -204,6 +204,24 @@ func quit(data ...interface{}) {
 	log.Fatalln(data...)
 }
 
+func waitEnter() {
+	// Let the button be released if needed
+	if buttons.Enter == true {
+		print("wait enter release")
+		for buttons.Enter == true {
+			now := currentTicks()
+			move(0, 0, now)
+		}
+	}
+
+	// Wait for it to be pressed
+	print("wait enter")
+	for buttons.Enter == false {
+		now := currentTicks()
+		move(0, 0, now)
+	}
+}
+
 func waitOneSecond() {
 	print("wait one second")
 	start := currentTicks()
@@ -237,15 +255,7 @@ func main() {
 
 	conf = config.Default()
 
-	lastPrint := 0
-	for {
-		now := currentTicks()
-		if now-lastPrint > 1000000 {
-			lastPrint = now
-			print("Tock...")
-		}
-	}
-
-	// waitOneSecond()
-	// moveOneSecond()
+	waitEnter()
+	waitOneSecond()
+	moveOneSecond()
 }
