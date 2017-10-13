@@ -684,7 +684,51 @@ func OpenButtons() *Buttons {
 				eventType := binary.LittleEndian.Uint16(event[8:])
 				eventCode := binary.LittleEndian.Uint16(event[10:])
 				eventValue := binary.LittleEndian.Uint32(event[12:])
-				log.Println("Event", eventType, eventCode, eventValue)
+				if eventType == 1 {
+					if eventCode == keyUp {
+						if eventValue == 1 {
+							result.Up = true
+						} else {
+							result.Up = false
+						}
+					} else if eventCode == keyUp {
+						if eventValue == 1 {
+							result.Up = true
+						} else {
+							result.Up = false
+						}
+					} else if eventCode == keyDown {
+						if eventValue == 1 {
+							result.Down = true
+						} else {
+							result.Down = false
+						}
+					} else if eventCode == keyLeft {
+						if eventValue == 1 {
+							result.Left = true
+						} else {
+							result.Left = false
+						}
+					} else if eventCode == keyRight {
+						if eventValue == 1 {
+							result.Right = true
+						} else {
+							result.Right = false
+						}
+					} else if eventCode == keyEnter {
+						if eventValue == 1 {
+							result.Enter = true
+						} else {
+							result.Enter = false
+						}
+					} else if eventCode == keyBackspace {
+						if eventValue == 1 {
+							result.Back = true
+						} else {
+							result.Back = false
+						}
+					}
+				}
 			case <-result.stop:
 				f.Close()
 				return
