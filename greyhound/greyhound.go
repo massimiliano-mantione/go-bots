@@ -237,7 +237,13 @@ func main() {
 
 	conf = config.Default()
 
+	lastPrint := 0
 	for {
+		now := currentTicks()
+		if now-lastPrint > 1000000 {
+			lastPrint = now
+			print("Tock...")
+		}
 	}
 
 	// waitOneSecond()
