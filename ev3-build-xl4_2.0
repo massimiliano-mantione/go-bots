@@ -1,4 +1,4 @@
 #!/bin/bash
 pushd $GOPATH/src/go-bots > /dev/null
-./ev3-build simple $1
+./ev3-build xl4_2.0 $1
 popd > /dev/null

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"go-bots/ev3"
-	"go-bots/simple/config"
+	"go-bots/super_red/config"
 	"log"
 	"os"
 	"os/signal"
@@ -22,7 +22,7 @@ func handleSignals() {
 
 var devs *ev3.Devices
 var initializationTime time.Time
-var motorL1, motorL2, motorR1, motorR2 *ev3.Attribute
+var motorL, motorR, motorFU, motorFD *ev3.Attribute
 var irL, irFL, irFR, irR *ev3.Attribute
 var irRemote1, irRemote2, irRemote3, irRemote4 *ev3.Attribute
 
@@ -117,17 +117,17 @@ func initialize() {
 	initializationTime = time.Now()
 
 	devs = ev3.Scan(&ev3.OutPortModes{
-		OutA: ev3.OutPortModeDcMotor,
-		OutB: ev3.OutPortModeDcMotor,
-		OutC: ev3.OutPortModeDcMotor,
-		OutD: ev3.OutPortModeDcMotor,
+		OutA: ev3.OutPortModeAuto,
+		OutB: ev3.OutPortModeAuto,
+		OutC: ev3.OutPortModeAuto,
+		OutD: ev3.OutPortModeAuto,
 	})
 
 	// Check motors
-	ev3.CheckDriver(devs.OutA, ev3.DriverRcxMotor, ev3.OutA)
-	ev3.CheckDriver(devs.OutB, ev3.DriverRcxMotor, ev3.OutB)
-	ev3.CheckDriver(devs.OutC, ev3.DriverRcxMotor, ev3.OutC)
-	ev3.CheckDriver(devs.OutD, ev3.DriverRcxMotor, ev3.OutD)
+	ev3.CheckDriver(devs.OutA, ev3.DriverTachoMotorMedium, ev3.OutA)
+	ev3.CheckDriver(devs.OutB, ev3.DriverTachoMotorLarge, ev3.OutB)
+	ev3.CheckDriver(devs.OutC, ev3.DriverTachoMotorLarge, ev3.OutC)
+	ev3.CheckDriver(devs.OutD, ev3.DriverTachoMotorLarge, ev3.OutD)
 
 	// Check sensors
 	ev3.CheckDriver(devs.In1, ev3.DriverIr, ev3.In1)
@@ -139,27 +139,27 @@ func initialize() {
 	setIrProxMode()
 
 	// Stop motors
-	ev3.RunCommand(devs.OutA, ev3.CmdStop)
-	ev3.RunCommand(devs.OutB, ev3.CmdStop)
-	ev3.RunCommand(devs.OutC, ev3.CmdStop)
-	ev3.RunCommand(devs.OutD, ev3.CmdStop)
+	ev3.RunCommand(devs.OutA, ev3.CmdReset)
+	ev3.RunCommand(devs.OutB, ev3.CmdReset)
+	ev3.RunCommand(devs.OutC, ev3.CmdReset)
+	ev3.RunCommand(devs.OutD, ev3.CmdReset)
 
 	// Open motors
-	motorL1 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
-	motorL2 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
-	motorR1 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
-	motorR2 = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
+	motorL = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
+	motorR = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	motorFU = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
+	motorFD = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
 
 	// Reset motor speed
-	motorL1.Value = 0
-	motorL2.Value = 0
-	motorR1.Value = 0
-	motorR2.Value = 0
+	motorL.Value = 0
+	motorR.Value = 0
+	motorFU.Value = 0
+	motorFD.Value = 0
 
-	motorL1.Sync()
-	motorL2.Sync()
-	motorR1.Sync()
-	motorR2.Sync()
+	motorL.Sync()
+	motorR.Sync()
+	motorFU.Sync()
+	motorFD.Sync()
 
 	// Put motors in direct mode
 	ev3.RunCommand(devs.OutA, ev3.CmdRunDirect)
@@ -170,16 +170,16 @@ func initialize() {
 
 func close() {
 	// Stop motors
-	ev3.RunCommand(devs.OutA, ev3.CmdStop)
-	ev3.RunCommand(devs.OutB, ev3.CmdStop)
-	ev3.RunCommand(devs.OutC, ev3.CmdStop)
-	ev3.RunCommand(devs.OutD, ev3.CmdStop)
+	ev3.RunCommand(devs.OutA, ev3.CmdReset)
+	ev3.RunCommand(devs.OutB, ev3.CmdReset)
+	ev3.RunCommand(devs.OutC, ev3.CmdReset)
+	ev3.RunCommand(devs.OutD, ev3.CmdReset)
 
 	// Close motors
-	motorL1.Close()
-	motorL2.Close()
-	motorR1.Close()
-	motorR2.Close()
+	motorL.Close()
+	motorR.Close()
+	motorFU.Close()
+	motorFD.Close()
 
 	// Close sensor values
 	closeIrProx()
@@ -192,54 +192,22 @@ var lastSpeedRight int
 
 const accelPerTicks int = 5
 
-func move(left int, right int, now int) {
-	ticks := now - lastMoveTicks
-	lastMoveTicks = now
+func move(left int, right int, frontUp int, frontDown int) {
 
-	nextSpeedLeft := lastSpeedLeft
-	nextSpeedRight := lastSpeedRight
-	delta := ticks * accelPerTicks
-	// delta := ticks * ticks * accelPerTicks
-
-	if left > nextSpeedLeft {
-		nextSpeedLeft += delta
-		if nextSpeedLeft > left {
-			nextSpeedLeft = left
-		}
-	} else if left < nextSpeedLeft {
-		nextSpeedLeft -= delta
-		if nextSpeedLeft < left {
-			nextSpeedLeft = left
-		}
-	}
-	if right > nextSpeedRight {
-		nextSpeedRight += delta
-		if nextSpeedRight > right {
-			nextSpeedRight = right
-		}
-	} else if right < nextSpeedRight {
-		nextSpeedRight -= delta
-		if nextSpeedRight < right {
-			nextSpeedRight = right
-		}
-	}
-	lastSpeedLeft = nextSpeedLeft
-	lastSpeedRight = nextSpeedRight
-
-	motorL1.Value = nextSpeedLeft / 10000
-	motorL2.Value = -nextSpeedLeft / 10000
-	motorR1.Value = nextSpeedRight / 10000
-	motorR2.Value = -nextSpeedRight / 10000
+	motorL.Value = -left / 10000
+	motorR.Value = -right / 10000
+	motorFU.Value = -frontUp / 10000
+	motorFD.Value = frontDown / 10000
 
 	// motorL1.Value = 0
 	// motorL2.Value = 0
 	// motorR1.Value = 0
 	// motorR2.Value = 0
 
-	motorL1.Sync()
-	motorL2.Sync()
-	motorR1.Sync()
-	motorR2.Sync()
+	motorL.Sync()
+	motorR.Sync()
+	motorFU.Sync()
+	motorFD.Sync()
 }
 
 func read() {
@@ -303,8 +271,7 @@ var strategyDirection = 0
 func chooseStrategy(channelNumber int) {
 	setIrRemoteMode(channelNumber)
 	for {
-		now := currentTicks()
-		move(0, 0, now)
+		move(0, 0, 0, 0)
 		remoteValue := readRemote()
 
 		if remoteValue == 3 {
@@ -327,7 +294,7 @@ func waitBegin() {
 	for {
 		now := currentTicks()
 		elapsed := now - start
-		move(0, 0, now)
+		move(0, 0, 0, 0)
 		if elapsed >= 5000000 {
 			strategy()
 			return
@@ -339,8 +306,7 @@ func strategy() {
 	setIrProxMode()
 	print("strategy")
 	for {
-		now := currentTicks()
-		move(0, 0, now)
+		move(0, 0, 0, 0)
 
 		if strategyDirection == -1 {
 			strategyLeft()
@@ -364,7 +330,7 @@ func strategyLeft() {
 			track(ev3.Right)
 			return
 		}
-		move(-20, conf.MaxSpeed, now)
+		move(-20, conf.MaxSpeed, 0, 0)
 	}
 	startS1 := currentTicks()
 	for {
@@ -376,7 +342,7 @@ func strategyLeft() {
 			track(ev3.Right)
 			return
 		}
-		move(conf.MaxSpeed, conf.MaxSpeed, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, 0, 0)
 	}
 	startR2 := currentTicks()
 	for {
@@ -388,7 +354,7 @@ func strategyLeft() {
 			track(ev3.Right)
 			return
 		}
-		move(conf.MaxSpeed, -20, now)
+		move(conf.MaxSpeed, -20, 0, 0)
 	}
 	startS2 := currentTicks()
 	for {
@@ -400,7 +366,7 @@ func strategyLeft() {
 			track(ev3.Right)
 			return
 		}
-		move(conf.MaxSpeed, conf.MaxSpeed, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, 0, 0)
 	}
 	track(ev3.Right)
 	return
@@ -418,7 +384,7 @@ func strategyStraight() {
 			track(ev3.Left)
 			return
 		}
-		move(conf.MaxSpeed, conf.MaxSpeed, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, 0, 0)
 	}
 	track(ev3.Left)
 	return
@@ -436,7 +402,7 @@ func strategyRight() {
 			track(ev3.Left)
 			return
 		}
-		move(conf.MaxSpeed, -20, now)
+		move(conf.MaxSpeed, -20, 0, 0)
 	}
 	startS1 := currentTicks()
 	for {
@@ -448,7 +414,7 @@ func strategyRight() {
 			track(ev3.Left)
 			return
 		}
-		move(conf.MaxSpeed, conf.MaxSpeed, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, 0, 0)
 	}
 	startR2 := currentTicks()
 	for {
@@ -460,7 +426,7 @@ func strategyRight() {
 			track(ev3.Left)
 			return
 		}
-		move(-20, conf.MaxSpeed, now)
+		move(-20, conf.MaxSpeed, 0, 0)
 	}
 	startS2 := currentTicks()
 	for {
@@ -472,7 +438,7 @@ func strategyRight() {
 			track(ev3.Left)
 			return
 		}
-		move(conf.MaxSpeed, conf.MaxSpeed, now)
+		move(conf.MaxSpeed, conf.MaxSpeed, 0, 0)
 	}
 	track(ev3.Left)
 	return
@@ -481,32 +447,31 @@ func strategyRight() {
 func track(dir ev3.Direction) {
 	print("track", irL.Value, irFL.Value, irFR.Value, irR.Value)
 	for {
-		now := currentTicks()
 		read()
 		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
 		if irL.Value < conf.MaxIrValue {
-			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, now)
+			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, conf.MaxSpeed, conf.MaxSpeed)
 			dir = ev3.Left
 			print("LEFT")
 		} else if irR.Value < conf.MaxIrValue {
-			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed, now)
+			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed, conf.MaxSpeed, conf.MaxSpeed)
 			dir = ev3.Right
 			print("RIGHT")
 		} else if irFL.Value < conf.MaxIrValue {
-			move(conf.TrackSpeed, conf.TrackSpeed, now)
+			move(conf.TrackSpeed, conf.TrackSpeed, conf.MaxSpeed, conf.MaxSpeed)
 			dir = ev3.Left
 			print("FRONT LEFT")
 		} else if irFR.Value < conf.MaxIrValue {
-			move(conf.TrackSpeed, conf.TrackSpeed, now)
+			move(conf.TrackSpeed, conf.TrackSpeed, conf.MaxSpeed, conf.MaxSpeed)
 			dir = ev3.Right
 			print("FRONT RIGHT")
 		} else {
 			if dir == ev3.Right {
-				move(conf.SeekTurnSpeed, -conf.SeekTurnSpeed, now)
+				move(conf.SeekTurnSpeed, -conf.SeekTurnSpeed, 0, 0)
 				print("SEEK RIGHT")
 			} else if dir == ev3.Left {
-				move(-conf.SeekTurnSpeed, conf.SeekTurnSpeed, now)
+				move(-conf.SeekTurnSpeed, conf.SeekTurnSpeed, 0, 0)
 				print("SEEK LEFT")
 			} else {
 				print("SEEK NONE")
@@ -519,9 +484,7 @@ func testRemote() {
 	setIrRemoteMode(1)
 
 	for {
-		now := currentTicks()
-
-		move(0, 0, now)
+		move(0, 0, 0, 0)
 		rem := readRemote()
 		if rem != 0 {
 			print("received", rem)
@@ -555,5 +518,5 @@ func main() {
 			read()
 			move(config.MaxSpeed, config.MaxSpeed, now)
 	*/
-	chooseStrategy(1)
+	chooseStrategy(2)
 }
