@@ -24,15 +24,15 @@ type Config struct {
 func Default() Config {
 	return Config{
 		MaxSpeed:             1000000,
-		TrackTurnSpeed:       1000000 / 2,
-		SeekTurnSpeed:        1000000 / 2,
+		TrackTurnSpeed:       400000,
+		SeekTurnSpeed:        400000,
 		TrackSpeed:           1000000,
-		MaxIrValue:           50,
-		StrategyR1Time:       500000,
-		StrategyS1Time:       500000,
-		StrategyR2Time:       500000,
-		StrategyS2Time:       500000,
-		StrategyStraightTime: 1000000,
+		MaxIrValue:           0,
+		StrategyR1Time:       220000,
+		StrategyS1Time:       120000,
+		StrategyR2Time:       470000,
+		StrategyS2Time:       120000,
+		StrategyStraightTime: 400000,
 	}
 }
 

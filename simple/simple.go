@@ -231,6 +231,11 @@ func move(left int, right int, now int) {
 	motorR1.Value = nextSpeedRight / 10000
 	motorR2.Value = -nextSpeedRight / 10000
 
+	// motorL1.Value = 0
+	// motorL2.Value = 0
+	// motorR1.Value = 0
+	// motorR2.Value = 0
+
 	motorL1.Sync()
 	motorL2.Sync()
 	motorR1.Sync()
@@ -286,6 +291,7 @@ func quit(data ...interface{}) {
 }
 
 func checkVision() bool {
+	read()
 	if irL.Value < conf.MaxIrValue || irFL.Value < conf.MaxIrValue || irFR.Value < conf.MaxIrValue || irR.Value < conf.MaxIrValue {
 		return true
 	}
@@ -358,12 +364,12 @@ func strategyLeft() {
 			track(ev3.Right)
 			return
 		}
-		move(-10, conf.MaxSpeed, now)
+		move(-20, conf.MaxSpeed, now)
 	}
 	startS1 := currentTicks()
 	for {
 		now := currentTicks()
-		if now-startS1 >= conf.StrategyR1Time {
+		if now-startS1 >= conf.StrategyS1Time {
 			break
 		}
 		if checkVision() {
@@ -375,19 +381,19 @@ func strategyLeft() {
 	startR2 := currentTicks()
 	for {
 		now := currentTicks()
-		if now-startR2 >= conf.StrategyR1Time {
+		if now-startR2 >= conf.StrategyR2Time {
 			break
 		}
 		if checkVision() {
 			track(ev3.Right)
 			return
 		}
-		move(conf.MaxSpeed, -10, now)
+		move(conf.MaxSpeed, -20, now)
 	}
 	startS2 := currentTicks()
 	for {
 		now := currentTicks()
-		if now-startS2 >= conf.StrategyR1Time {
+		if now-startS2 >= conf.StrategyS2Time {
 			break
 		}
 		if checkVision() {
@@ -430,12 +436,12 @@ func strategyRight() {
 			track(ev3.Left)
 			return
 		}
-		move(conf.MaxSpeed, -10, now)
+		move(conf.MaxSpeed, -20, now)
 	}
 	startS1 := currentTicks()
 	for {
 		now := currentTicks()
-		if now-startS1 >= conf.StrategyR1Time {
+		if now-startS1 >= conf.StrategyS1Time {
 			break
 		}
 		if checkVision() {
@@ -447,19 +453,19 @@ func strategyRight() {
 	startR2 := currentTicks()
 	for {
 		now := currentTicks()
-		if now-startR2 >= conf.StrategyR1Time {
+		if now-startR2 >= conf.StrategyR2Time {
 			break
 		}
 		if checkVision() {
 			track(ev3.Left)
 			return
 		}
-		move(-10, conf.MaxSpeed, now)
+		move(-20, conf.MaxSpeed, now)
 	}
 	startS2 := currentTicks()
 	for {
 		now := currentTicks()
-		if now-startS2 >= conf.StrategyR1Time {
+		if now-startS2 >= conf.StrategyS2Time {
 			break
 		}
 		if checkVision() {
@@ -473,11 +479,11 @@ func strategyRight() {
 }
 
 func track(dir ev3.Direction) {
-	print("track")
+	print("track", irL.Value, irFL.Value, irFR.Value, irR.Value)
 	for {
 		now := currentTicks()
 		read()
-		// print(irL.Value, irFL.Value, irFR.Value, irR.Value)
+		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
 		if irL.Value < conf.MaxIrValue {
 			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, now)
