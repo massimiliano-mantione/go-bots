@@ -1,0 +1,12 @@
+MaxSpeed=         1000000
+SensorRadius=     500
+SensorWhite=      60
+MinDTicks=        10
+MaxDTicks=        10000
+ParamP1=          0
+ParamP2=          0
+ParamPR=          1
+ParamD1=          0
+ParamD2=          0
+ParamDR=          1
+InnerBrakeFactor= 1
