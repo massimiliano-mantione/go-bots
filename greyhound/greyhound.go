@@ -219,6 +219,15 @@ func waitEnter() {
 	for buttons.Enter == false {
 		now := currentTicks()
 		move(0, 0, now)
+		if buttons.Back {
+			newConf, err := config.FromFile("greyhound.toml")
+			if err != nil {
+				print("Error reading conf:", err)
+			} else {
+				conf = newConf
+				print("Configuration reloaded:", conf)
+			}
+		}
 	}
 }
 
@@ -229,9 +238,180 @@ func waitOneSecond() {
 		now := currentTicks()
 		elapsed := now - start
 		move(0, 0, now)
+		if buttons.Enter && buttons.Back {
+			quit("Done")
+		}
 		if elapsed >= 1000000 {
 			break
 		}
+	}
+}
+
+func trimSensor(value int) int {
+	if value > conf.SensorWhite {
+		return conf.SensorWhite
+	}
+	return value
+}
+func isWhite(value int) bool {
+	return value >= conf.SensorWhite
+}
+func distanceFromSensor(value int) int {
+	return value * conf.SensorRadius / conf.SensorWhite
+}
+func positionBetweenSensors(value1 int, value2 int) int {
+	return (value1 - value2) * conf.SensorRadius / conf.SensorWhite
+}
+
+var currentP int
+var currentPTicks int
+var lastP int
+var lastPTicks int
+
+func processSensorData() {
+	read()
+	ll, l, r, rr := trimSensor(cLL.Value), trimSensor(cL.Value), trimSensor(cR.Value), trimSensor(cRR.Value)
+	radius := conf.SensorRadius
+
+	lastP = currentP
+	lastPTicks = currentPTicks
+	currentPTicks = currentTicks()
+
+	status := "XXXX"
+
+	if isWhite(ll) {
+		if isWhite(l) {
+			// left - -
+			if isWhite(r) {
+				if isWhite(rr) {
+					// We lost the line, keep last direction set to max
+					if lastP > 0 {
+						status = "---+"
+						currentP = radius * 4
+					} else if lastP < 0 {
+						status = "+---"
+						currentP = -radius * 4
+					} else {
+						status = "----"
+						currentP = 0
+					}
+				} else {
+					// Far right
+					status = "---X"
+					currentP = (radius * 3) + distanceFromSensor(rr)
+				}
+			} else {
+				if isWhite(rr) {
+					// Centered on r
+					status = "--X-"
+					currentP = radius
+				} else {
+					// Between r and rr
+					status = "--XX"
+					currentP = (radius * 2) + positionBetweenSensors(r, rr)
+				}
+			}
+		} else {
+			// left - l
+			if isWhite(r) {
+				if isWhite(rr) {
+					// Centered on l
+					status = "-X--"
+					currentP = -radius
+				} else {
+					// Inconclusive (l, rr), keep last value
+					status = "-X-X"
+					currentP = lastP
+				}
+			} else {
+				if isWhite(rr) {
+					// Between l and r
+					status = "-XX-"
+					currentP = positionBetweenSensors(l, r)
+				} else {
+					// Inconclusive (l, r, rr), keep r
+					status = "-XXX"
+					currentP = radius
+				}
+			}
+		}
+	} else {
+		if isWhite(l) {
+			// left ll -
+			if isWhite(r) {
+				if isWhite(rr) {
+					// Far left
+					status = "X---"
+					currentP = -(radius * 3) - distanceFromSensor(rr)
+				} else {
+					// Inconclusive (ll, rr), keep last value
+					status = "X--X"
+					currentP = lastP
+				}
+			} else {
+				if isWhite(rr) {
+					// Inconclusive (ll, r), keep last value
+					status = "X-X-"
+					currentP = lastP
+				} else {
+					// Inconclusive (ll, r, rr), keep last value
+					status = "X-XX"
+					currentP = lastP
+				}
+			}
+		} else {
+			// left ll l
+			if isWhite(r) {
+				if isWhite(rr) {
+					// Between ll and l
+					status = "XX--"
+					currentP = -(radius * 2) - positionBetweenSensors(ll, l)
+				} else {
+					// Inconclusive (ll, l, rr), keep last value
+					status = "XX-X"
+					currentP = lastP
+				}
+			} else {
+				if isWhite(rr) {
+					// Inconclusive (ll, l, r), keep l
+					status = "XXX-"
+					currentP = -radius
+				} else {
+					// Inconclusive (ll, l, r, rr), keep last value
+					status = "XXXX"
+					currentP = lastP
+				}
+			}
+		}
+	}
+
+	deltaTicks := currentPTicks - lastPTicks
+	if deltaTicks < conf.MinDTicks {
+		deltaTicks = conf.MinDTicks
+	} else if deltaTicks > conf.MaxDTicks {
+		deltaTicks = conf.MaxDTicks
+	}
+	currentD := (currentP - lastP) / deltaTicks
+
+	print(status, ll, "[", cLL.Value, "]", l, "[", cL.Value, "]", r, "[", cR.Value, "]", rr, "[", cRR.Value, "]", "p", currentP, "d", currentD, "t", deltaTicks/1000)
+
+	steering := ((currentP * conf.ParamP1) + (currentP * currentP * conf.ParamP1)) / conf.ParamPR
+	steering += ((currentD * conf.ParamD1) + (currentD * currentD * conf.ParamD1)) / conf.ParamDR
+	steering /= conf.InnerBrakeFactor
+
+	if steering > 0 {
+		if steering > conf.MaxSpeed {
+			steering = conf.MaxSpeed
+		}
+		move(conf.MaxSpeed, conf.MaxSpeed-steering, currentPTicks)
+	} else if steering < 0 {
+		steering = -steering
+		if steering > conf.MaxSpeed {
+			steering = conf.MaxSpeed
+		}
+		move(conf.MaxSpeed-steering, conf.MaxSpeed, currentPTicks)
+	} else {
+		move(conf.MaxSpeed, conf.MaxSpeed, currentPTicks)
 	}
 }
 
@@ -248,6 +428,17 @@ func moveOneSecond() {
 	}
 }
 
+func followLine() {
+	print("following line")
+	for {
+		processSensorData()
+		if buttons.Back {
+			print("stopping")
+			break
+		}
+	}
+}
+
 func main() {
 	handleSignals()
 	initialize()
@@ -255,7 +446,8 @@ func main() {
 
 	conf = config.Default()
 
-	waitEnter()
+	// waitEnter()
 	waitOneSecond()
-	moveOneSecond()
+	// moveOneSecond()
+	followLine()
 }
