@@ -688,10 +688,10 @@ func OpenButtons(readStdin bool) *Buttons {
 			go func() {
 				consoleReader := bufio.NewReaderSize(os.Stdin, 1)
 				for {
+					key, _ := consoleReader.ReadByte()
 					if f == nil {
 						return
 					}
-					key, _ := consoleReader.ReadByte()
 					if key == 9 {
 						// Tab -> Back
 						result.Back = true
