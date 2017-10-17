@@ -699,7 +699,7 @@ func OpenButtons(readStdin bool) *Buttons {
 							result.Back = false
 						})
 					} else if key == 32 {
-						// Tab -> Back
+						// Space -> Enter
 						result.Enter = true
 						time.AfterFunc(keyUpTime, func() {
 							result.Enter = false
