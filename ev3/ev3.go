@@ -1,6 +1,7 @@
 package ev3
 
 import (
+	"bufio"
 	"encoding/binary"
 	"io"
 	"io/ioutil"
@@ -648,8 +649,10 @@ type Buttons struct {
 	stop  chan bool
 }
 
+const keyUpTime = time.Second / 10
+
 // OpenButtons starts listening for button changes
-func OpenButtons() *Buttons {
+func OpenButtons(readStdin bool) *Buttons {
 	result := Buttons{}
 	result.stop = make(chan bool)
 
@@ -664,6 +667,9 @@ func OpenButtons() *Buttons {
 		go func() {
 			var event [16]byte
 			for {
+				if f == nil {
+					return
+				}
 				n, err := f.Read(event[0:16])
 				if err != nil {
 					if err == io.EOF || err == io.ErrClosedPipe {
@@ -677,6 +683,55 @@ func OpenButtons() *Buttons {
 				data <- event
 			}
 		}()
+
+		if readStdin {
+			go func() {
+				consoleReader := bufio.NewReaderSize(os.Stdin, 1)
+				for {
+					if f == nil {
+						return
+					}
+					key, _ := consoleReader.ReadByte()
+					if key == 9 {
+						// Tab -> Back
+						result.Back = true
+						time.AfterFunc(keyUpTime, func() {
+							result.Back = false
+						})
+					} else if key == 32 {
+						// Tab -> Back
+						result.Enter = true
+						time.AfterFunc(keyUpTime, func() {
+							result.Enter = false
+						})
+					} else if key == 'a' || key == 'A' {
+						// A -> Left
+						result.Left = true
+						time.AfterFunc(keyUpTime, func() {
+							result.Left = false
+						})
+					} else if key == 'd' || key == 'D' {
+						// D -> Right
+						result.Right = true
+						time.AfterFunc(keyUpTime, func() {
+							result.Right = false
+						})
+					} else if key == 'w' || key == 'W' {
+						// W -> Up
+						result.Up = true
+						time.AfterFunc(keyUpTime, func() {
+							result.Up = false
+						})
+					} else if key == 's' || key == 'S' {
+						// S -> Down
+						result.Down = true
+						time.AfterFunc(keyUpTime, func() {
+							result.Down = false
+						})
+					}
+				}
+			}()
+		}
 
 		for {
 			select {
@@ -731,6 +786,7 @@ func OpenButtons() *Buttons {
 				}
 			case <-result.stop:
 				f.Close()
+				f = nil
 				return
 			}
 		}
