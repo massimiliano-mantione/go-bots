@@ -50,7 +50,7 @@ func setSensorsMode() {
 func initialize() {
 	initializationTime = time.Now()
 
-	buttons = ev3.OpenButtons()
+	buttons = ev3.OpenButtons(true)
 
 	devs = ev3.Scan(&ev3.OutPortModes{
 		OutA: ev3.OutPortModeDcMotor,
