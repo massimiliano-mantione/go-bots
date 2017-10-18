@@ -73,6 +73,12 @@ const ColorModeAmbient = "COL-AMBIENT"
 // ColorModeRaw color sensor raw mode
 const ColorModeRaw = "COL-RAW"
 
+// ColorModeRefRaw color sensor reflective raw mode
+const ColorModeRefRaw = "REF-RAW"
+
+// ColorModeRgbRaw color sensor RGB raw mode
+const ColorModeRgbRaw = "RGB-RAW"
+
 // In1 input port 1
 const In1 = "in1"
 
