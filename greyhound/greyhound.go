@@ -36,15 +36,15 @@ func closeSensors() {
 }
 
 func setSensorsMode() {
-	ev3.SetMode(devs.In1, ev3.ColorModeReflect)
-	ev3.SetMode(devs.In2, ev3.ColorModeReflect)
-	ev3.SetMode(devs.In3, ev3.ColorModeReflect)
-	ev3.SetMode(devs.In4, ev3.ColorModeReflect)
+	ev3.SetMode(devs.In1, ev3.ColorModeRgbRaw)
+	ev3.SetMode(devs.In2, ev3.ColorModeRgbRaw)
+	ev3.SetMode(devs.In3, ev3.ColorModeRgbRaw)
+	ev3.SetMode(devs.In4, ev3.ColorModeRgbRaw)
 
-	cLL = ev3.OpenByteR(devs.In4, ev3.BinData)
-	cL = ev3.OpenByteR(devs.In3, ev3.BinData)
-	cR = ev3.OpenByteR(devs.In2, ev3.BinData)
-	cRR = ev3.OpenByteR(devs.In1, ev3.BinData)
+	cLL = ev3.OpenBinaryR(devs.In4, ev3.BinData, 3, 2)
+	cL = ev3.OpenBinaryR(devs.In3, ev3.BinData, 3, 2)
+	cR = ev3.OpenBinaryR(devs.In2, ev3.BinData, 3, 2)
+	cRR = ev3.OpenBinaryR(devs.In1, ev3.BinData, 3, 2)
 }
 
 func initialize() {
@@ -247,7 +247,8 @@ func waitOneSecond() {
 	}
 }
 
-func trimSensor(value int) int {
+func trimSensor(attr *ev3.Attribute) int {
+	value := attr.Value + attr.Value1 + attr.Value2
 	if value > conf.SensorWhite {
 		return conf.SensorWhite
 	}
@@ -270,7 +271,7 @@ var lastPTicks int
 
 func processSensorData() {
 	read()
-	ll, l, r, rr := trimSensor(cLL.Value), trimSensor(cL.Value), trimSensor(cR.Value), trimSensor(cRR.Value)
+	ll, l, r, rr := trimSensor(cLL), trimSensor(cL), trimSensor(cR), trimSensor(cRR)
 	radius := conf.SensorRadius
 
 	lastP = currentP
@@ -395,8 +396,8 @@ func processSensorData() {
 
 	print(status, ll, "[", cLL.Value, "]", l, "[", cL.Value, "]", r, "[", cR.Value, "]", rr, "[", cRR.Value, "]", "p", currentP, "d", currentD, "t", deltaTicks/1000)
 
-	steering := ((currentP * conf.ParamP1) + (currentP * currentP * conf.ParamP1)) / conf.ParamPR
-	steering += ((currentD * conf.ParamD1) + (currentD * currentD * conf.ParamD1)) / conf.ParamDR
+	steering := ((currentP * conf.ParamP1) + (currentP * currentP * conf.ParamP2)) / conf.ParamPR
+	steering += ((currentD * conf.ParamD1) + (currentD * currentD * conf.ParamD2)) / conf.ParamDR
 	steering /= conf.InnerBrakeFactor
 
 	if steering > 0 {
@@ -432,8 +433,19 @@ func followLine() {
 	print("following line")
 	for {
 		processSensorData()
-		if buttons.Back {
+		if buttons.Enter {
 			print("stopping")
+			break
+		}
+		if buttons.Back {
+			print("reloading config")
+			newConf, err := config.FromFile("greyhound.toml")
+			if err != nil {
+				print("Error reading conf:", err)
+			} else {
+				conf = newConf
+				print("Configuration reloaded:", conf)
+			}
 			break
 		}
 	}
@@ -446,7 +458,7 @@ func main() {
 
 	conf = config.Default()
 
-	// waitEnter()
+	waitEnter()
 	waitOneSecond()
 	// moveOneSecond()
 	followLine()
