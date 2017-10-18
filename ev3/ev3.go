@@ -319,13 +319,22 @@ const attributeBufSize int = 64
 
 // Attribute holds an open file on a given attribute so that subsequent operations are faster
 type Attribute struct {
-	path         string
-	file         *os.File
-	currentValue int
-	Value        int
-	writable     bool
-	text         bool
-	buf          [attributeBufSize]byte
+	path          string
+	file          *os.File
+	currentValue  int
+	currentValue1 int
+	currentValue2 int
+	currentValue3 int
+	Value         int
+	Value1        int
+	Value2        int
+	Value3        int
+	valueCount    int
+	valueSize     int
+	bufferSize    int
+	writable      bool
+	text          bool
+	buf           [attributeBufSize]byte
 }
 
 // Path gets the attribute file full path
@@ -353,7 +362,10 @@ func (a *Attribute) Sync() {
 		log.Fatalln("Cannot write to closed attribute", a.path)
 	}
 	if a.writable {
-		if a.Value != a.currentValue {
+		if (a.Value != a.currentValue) ||
+			(a.valueCount > 1 && ((a.Value1 != a.currentValue1) ||
+				(a.valueCount > 2 && ((a.Value2 != a.currentValue2) ||
+					(a.valueCount > 3 && (a.Value3 != a.currentValue3)))))) {
 			var toWrite []byte
 			if a.text {
 				v := a.Value
@@ -386,8 +398,39 @@ func (a *Attribute) Sync() {
 					digits--
 				}
 			} else {
-				a.buf[0] = byte(a.Value)
-				toWrite = a.buf[0:1]
+				if a.valueSize == 1 {
+					a.buf[0] = byte(a.Value)
+					a.currentValue = a.Value
+					if a.valueCount > 1 {
+						a.buf[1] = byte(a.Value1)
+						a.currentValue1 = a.Value1
+						if a.valueCount > 2 {
+							a.buf[2] = byte(a.Value2)
+							a.currentValue2 = a.Value2
+							if a.valueCount > 3 {
+								a.buf[3] = byte(a.Value3)
+								a.currentValue3 = a.Value3
+							}
+						}
+					}
+				} else {
+					binary.BigEndian.PutUint16(a.buf[0:2], uint16(a.Value))
+					a.currentValue = a.Value
+					if a.valueCount > 1 {
+						binary.BigEndian.PutUint16(a.buf[2:4], uint16(a.Value1))
+						a.currentValue1 = a.Value1
+						if a.valueCount > 2 {
+							binary.BigEndian.PutUint16(a.buf[4:6], uint16(a.Value2))
+							a.currentValue2 = a.Value2
+							if a.valueCount > 3 {
+								binary.BigEndian.PutUint16(a.buf[6:8], uint16(a.Value3))
+								a.currentValue3 = a.Value3
+							}
+						}
+					}
+				}
+
+				toWrite = a.buf[0:a.bufferSize]
 			}
 			n, err := a.file.WriteAt(toWrite, 0)
 			if err != nil {
@@ -396,7 +439,6 @@ func (a *Attribute) Sync() {
 			if n != len(toWrite) {
 				log.Fatalln("Cannot write bytes to attribute file", a.path, ":", err)
 			}
-			a.currentValue = a.Value
 		}
 	} else {
 		if a.text {
@@ -433,14 +475,38 @@ func (a *Attribute) Sync() {
 			}
 			a.Value = v
 		} else {
-			n, err := a.file.ReadAt(a.buf[0:1], 0)
+			n, err := a.file.ReadAt(a.buf[0:a.bufferSize], 0)
 			if err != nil {
 				log.Fatalln("Cannot read from attribute file", a.path, ":", err)
 			}
-			if n != 1 {
-				log.Fatalln("Cannot read one byte from attribute file", a.path, ":", err)
+			if n != a.bufferSize {
+				log.Fatalln("Cannot read whole attribute file", a.path, ":", n)
 			}
-			a.Value = int(a.buf[0])
+
+			if a.valueSize == 1 {
+				a.Value = int(a.buf[0])
+				if a.valueCount > 1 {
+					a.Value1 = int(a.buf[1])
+					if a.valueCount > 2 {
+						a.Value2 = int(a.buf[2])
+						if a.valueCount > 3 {
+							a.Value3 = int(a.buf[3])
+						}
+					}
+				}
+			} else {
+				a.Value = int(binary.BigEndian.Uint16(a.buf[0:2]))
+				if a.valueCount > 1 {
+					a.Value1 = int(binary.BigEndian.Uint16(a.buf[2:4]))
+					if a.valueCount > 2 {
+						a.Value2 = int(binary.BigEndian.Uint16(a.buf[4:6]))
+						if a.valueCount > 3 {
+							a.Value3 = int(binary.BigEndian.Uint16(a.buf[6:8]))
+						}
+					}
+				}
+			}
+
 		}
 	}
 }
@@ -456,20 +522,48 @@ func OpenAttribute(dev string, attr string, writable bool, text bool) *Attribute
 	if err != nil {
 		log.Fatalln("Cannot open device", dev, ":", err)
 	}
+	bufferSize := 0
+	if !text {
+		bufferSize = 1
+	}
 	return &Attribute{
-		path:         path,
-		file:         f,
-		currentValue: math.MaxInt32,
-		Value:        0,
-		writable:     writable,
-		text:         text,
-		buf:          [attributeBufSize]byte{},
+		path:          path,
+		file:          f,
+		currentValue:  math.MaxInt32,
+		currentValue1: math.MaxInt32,
+		currentValue2: math.MaxInt32,
+		currentValue3: math.MaxInt32,
+		Value:         0,
+		Value1:        0,
+		Value2:        0,
+		Value3:        0,
+		valueCount:    1,
+		valueSize:     1,
+		bufferSize:    bufferSize,
+		writable:      writable,
+		text:          text,
+		buf:           [attributeBufSize]byte{},
 	}
 }
 
 // OpenByteR opens a byte attribute for reading
 func OpenByteR(dev string, attr string) *Attribute {
 	return OpenAttribute(dev, attr, false, false)
+}
+
+// OpenBinaryR opens a binary (potentially multi value) attribute for reading
+func OpenBinaryR(dev string, attr string, valueCount int, valueSize int) *Attribute {
+	if valueCount < 1 || valueCount > 4 {
+		log.Fatalln("Invalid value count", valueCount)
+	}
+	if valueSize < 1 || valueSize > 2 {
+		log.Fatalln("Invalid value size", valueSize)
+	}
+	result := OpenAttribute(dev, attr, false, false)
+	result.valueCount = valueCount
+	result.valueSize = valueSize
+	result.bufferSize = valueCount * valueSize
+	return result
 }
 
 // OpenByteW opens a byte attribute for writing
