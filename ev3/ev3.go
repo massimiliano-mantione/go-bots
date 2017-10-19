@@ -414,16 +414,16 @@ func (a *Attribute) Sync() {
 						}
 					}
 				} else {
-					binary.BigEndian.PutUint16(a.buf[0:2], uint16(a.Value))
+					binary.LittleEndian.PutUint16(a.buf[0:2], uint16(a.Value))
 					a.currentValue = a.Value
 					if a.valueCount > 1 {
-						binary.BigEndian.PutUint16(a.buf[2:4], uint16(a.Value1))
+						binary.LittleEndian.PutUint16(a.buf[2:4], uint16(a.Value1))
 						a.currentValue1 = a.Value1
 						if a.valueCount > 2 {
-							binary.BigEndian.PutUint16(a.buf[4:6], uint16(a.Value2))
+							binary.LittleEndian.PutUint16(a.buf[4:6], uint16(a.Value2))
 							a.currentValue2 = a.Value2
 							if a.valueCount > 3 {
-								binary.BigEndian.PutUint16(a.buf[6:8], uint16(a.Value3))
+								binary.LittleEndian.PutUint16(a.buf[6:8], uint16(a.Value3))
 								a.currentValue3 = a.Value3
 							}
 						}
@@ -495,13 +495,13 @@ func (a *Attribute) Sync() {
 					}
 				}
 			} else {
-				a.Value = int(binary.BigEndian.Uint16(a.buf[0:2]))
+				a.Value = int(binary.LittleEndian.Uint16(a.buf[0:2]))
 				if a.valueCount > 1 {
-					a.Value1 = int(binary.BigEndian.Uint16(a.buf[2:4]))
+					a.Value1 = int(binary.LittleEndian.Uint16(a.buf[2:4]))
 					if a.valueCount > 2 {
-						a.Value2 = int(binary.BigEndian.Uint16(a.buf[4:6]))
+						a.Value2 = int(binary.LittleEndian.Uint16(a.buf[4:6]))
 						if a.valueCount > 3 {
-							a.Value3 = int(binary.BigEndian.Uint16(a.buf[6:8]))
+							a.Value3 = int(binary.LittleEndian.Uint16(a.buf[6:8]))
 						}
 					}
 				}
