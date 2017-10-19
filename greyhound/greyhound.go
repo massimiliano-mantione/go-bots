@@ -247,21 +247,28 @@ func waitOneSecond() {
 	}
 }
 
+func sumSensor(attr *ev3.Attribute) int {
+	return attr.Value + attr.Value1 + attr.Value2
+}
 func trimSensor(attr *ev3.Attribute) int {
 	value := attr.Value + attr.Value1 + attr.Value2
-	if value > conf.SensorWhite {
-		return conf.SensorWhite
+	if value < conf.SensorMin {
+		value = conf.SensorMin
+	}
+	value -= conf.SensorMin
+	if value > conf.SensorSpan {
+		value = conf.SensorSpan
 	}
 	return value
 }
 func isWhite(value int) bool {
-	return value >= conf.SensorWhite
+	return value >= conf.SensorSpan
 }
 func distanceFromSensor(value int) int {
-	return value * conf.SensorRadius / conf.SensorWhite
+	return value * conf.SensorRadius / conf.SensorSpan
 }
 func positionBetweenSensors(value1 int, value2 int) int {
-	return (value1 - value2) * conf.SensorRadius / conf.SensorWhite
+	return (value1 - value2) * conf.SensorRadius / conf.SensorSpan
 }
 
 var currentP int
@@ -285,31 +292,23 @@ func processSensorData() {
 			// left - -
 			if isWhite(r) {
 				if isWhite(rr) {
-					// We lost the line, keep last direction set to max
-					if lastP > 0 {
-						status = "---+"
-						currentP = radius * 4
-					} else if lastP < 0 {
-						status = "+---"
-						currentP = -radius * 4
-					} else {
-						status = "----"
-						currentP = 0
-					}
+					// We lost the line, keep last direction
+					status = "----"
+					currentP = lastP
 				} else {
 					// Far right
 					status = "---X"
-					currentP = (radius * 3) + distanceFromSensor(rr)
+					currentP = (radius * 3) - distanceFromSensor(rr)
 				}
 			} else {
 				if isWhite(rr) {
 					// Centered on r
 					status = "--X-"
-					currentP = radius
+					currentP = radius - distanceFromSensor(r)
 				} else {
-					// Between r and rr
+					// Angle (r, rr)
 					status = "--XX"
-					currentP = (radius * 2) + positionBetweenSensors(r, rr)
+					currentP = radius * 3
 				}
 			}
 		} else {
@@ -318,7 +317,7 @@ func processSensorData() {
 				if isWhite(rr) {
 					// Centered on l
 					status = "-X--"
-					currentP = -radius
+					currentP = -radius + distanceFromSensor(l)
 				} else {
 					// Inconclusive (l, rr), keep last value
 					status = "-X-X"
@@ -328,11 +327,11 @@ func processSensorData() {
 				if isWhite(rr) {
 					// Between l and r
 					status = "-XX-"
-					currentP = positionBetweenSensors(l, r)
+					currentP = lastP
 				} else {
-					// Inconclusive (l, r, rr), keep r
+					// Angle (l, r, rr)
 					status = "-XXX"
-					currentP = radius
+					currentP = radius * 3
 				}
 			}
 		}
@@ -343,19 +342,19 @@ func processSensorData() {
 				if isWhite(rr) {
 					// Far left
 					status = "X---"
-					currentP = -(radius * 3) - distanceFromSensor(rr)
+					currentP = -(radius * 3) + distanceFromSensor(rr)
 				} else {
-					// Inconclusive (ll, rr), keep last value
+					// Inconclusive (ll, rr)
 					status = "X--X"
 					currentP = lastP
 				}
 			} else {
 				if isWhite(rr) {
-					// Inconclusive (ll, r), keep last value
+					// Inconclusive (ll, r)
 					status = "X-X-"
 					currentP = lastP
 				} else {
-					// Inconclusive (ll, r, rr), keep last value
+					// Inconclusive (ll, r, rr)
 					status = "X-XX"
 					currentP = lastP
 				}
@@ -364,21 +363,21 @@ func processSensorData() {
 			// left ll l
 			if isWhite(r) {
 				if isWhite(rr) {
-					// Between ll and l
+					// Angle (ll, l)
 					status = "XX--"
-					currentP = -(radius * 2) - positionBetweenSensors(ll, l)
+					currentP = -(radius * 3)
 				} else {
-					// Inconclusive (ll, l, rr), keep last value
+					// Inconclusive (ll, l, rr)
 					status = "XX-X"
 					currentP = lastP
 				}
 			} else {
 				if isWhite(rr) {
-					// Inconclusive (ll, l, r), keep l
+					// Angle (ll, l, r)
 					status = "XXX-"
-					currentP = -radius
+					currentP = -(radius * 3)
 				} else {
-					// Inconclusive (ll, l, r, rr), keep last value
+					// Inconclusive (ll, l, r, rr)
 					status = "XXXX"
 					currentP = lastP
 				}
@@ -392,23 +391,26 @@ func processSensorData() {
 	} else if deltaTicks > conf.MaxDTicks {
 		deltaTicks = conf.MaxDTicks
 	}
-	currentD := (currentP - lastP) / deltaTicks
+	deltaP := currentP - lastP
+	currentD := (conf.DTicksBoost * deltaP) / deltaTicks
 
-	print(status, ll, "[", cLL.Value, "]", l, "[", cL.Value, "]", r, "[", cR.Value, "]", rr, "[", cRR.Value, "]", "p", currentP, "d", currentD, "t", deltaTicks/1000)
+	factorP := ((currentP * conf.ParamP1) + (currentP * currentP * conf.ParamP2)) / conf.ParamPR
+	factorD := ((currentD * conf.ParamD1) + (currentD * currentD * conf.ParamD2)) / conf.ParamDR
+	steering := (factorP + factorD) / conf.InnerBrakeFactor
 
-	steering := ((currentP * conf.ParamP1) + (currentP * currentP * conf.ParamP2)) / conf.ParamPR
-	steering += ((currentD * conf.ParamD1) + (currentD * currentD * conf.ParamD2)) / conf.ParamDR
-	steering /= conf.InnerBrakeFactor
+	// print(status, ll, "[", sumSensor(cLL), "]", l, "[", sumSensor(cL), "]", r, "[", sumSensor(cR), "]", rr, "[", sumSensor(cRR), "]", "p", currentP, "dP", deltaP, "dP/dT", currentD, "dT", deltaTicks/1000, (currentPTicks-lastPTicks)/1000)
+	// print(status, "P", currentP, "dP", deltaP, "dP/dT", currentD, "dT", deltaTicks/1000, "T", (currentPTicks-lastPTicks)/1000)
+	print(status, "P", currentP, "f", factorP, factorD, "s", steering, "T", (currentPTicks-lastPTicks)/1000)
 
 	if steering > 0 {
-		if steering > conf.MaxSpeed {
-			steering = conf.MaxSpeed
+		if steering > conf.MaxSteering {
+			steering = conf.MaxSteering
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed-steering, currentPTicks)
 	} else if steering < 0 {
 		steering = -steering
-		if steering > conf.MaxSpeed {
-			steering = conf.MaxSpeed
+		if steering > conf.MaxSteering {
+			steering = conf.MaxSteering
 		}
 		move(conf.MaxSpeed-steering, conf.MaxSpeed, currentPTicks)
 	} else {
@@ -456,7 +458,15 @@ func main() {
 	initialize()
 	defer close()
 
-	conf = config.Default()
+	newConf, err := config.FromFile("greyhound.toml")
+	if err != nil {
+		print("Error reading conf:", err)
+		conf = config.Default()
+		print("Using default conf", conf)
+	} else {
+		conf = newConf
+		print("Configuration loaded:", conf)
+	}
 
 	waitEnter()
 	waitOneSecond()
