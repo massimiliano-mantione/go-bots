@@ -9,10 +9,13 @@ import (
 // Config data
 type Config struct {
 	MaxSpeed         int
+	MaxSteering      int
 	SensorRadius     int
-	SensorWhite      int
+	SensorSpan       int
+	SensorMin        int
 	MinDTicks        int
 	MaxDTicks        int
+	DTicksBoost      int
 	ParamP1          int
 	ParamP2          int
 	ParamPR          int
@@ -26,14 +29,17 @@ type Config struct {
 func Default() Config {
 	return Config{
 		// MaxSpeed:         1000000,
-		MaxSpeed:         0,
+		MaxSpeed:         300000,
+		MaxSteering:      1200000,
 		SensorRadius:     500,
-		SensorWhite:      60,
+		SensorSpan:       700,
+		SensorMin:        80,
 		MinDTicks:        10,
-		MaxDTicks:        10000,
-		ParamP1:          0,
-		ParamP2:          0,
-		ParamPR:          1,
+		MaxDTicks:        30000,
+		DTicksBoost:      100000,
+		ParamP1:          1800,
+		ParamP2:          1,
+		ParamPR:          4,
 		ParamD1:          0,
 		ParamD2:          0,
 		ParamDR:          1,
