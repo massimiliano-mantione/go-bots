@@ -41,10 +41,10 @@ func setSensorsMode() {
 	ev3.SetMode(devs.In3, ev3.ColorModeRgbRaw)
 	ev3.SetMode(devs.In4, ev3.ColorModeRgbRaw)
 
-	cLL = ev3.OpenBinaryR(devs.In4, ev3.BinData, 3, 2)
-	cL = ev3.OpenBinaryR(devs.In3, ev3.BinData, 3, 2)
-	cR = ev3.OpenBinaryR(devs.In2, ev3.BinData, 3, 2)
-	cRR = ev3.OpenBinaryR(devs.In1, ev3.BinData, 3, 2)
+	cLL = ev3.OpenBinaryR(devs.In1, ev3.BinData, 3, 2)
+	cL = ev3.OpenBinaryR(devs.In2, ev3.BinData, 3, 2)
+	cR = ev3.OpenBinaryR(devs.In3, ev3.BinData, 3, 2)
+	cRR = ev3.OpenBinaryR(devs.In4, ev3.BinData, 3, 2)
 }
 
 func initialize() {
@@ -81,10 +81,10 @@ func initialize() {
 	ev3.RunCommand(devs.OutD, ev3.CmdStop)
 
 	// Open motors
-	motorL1 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
-	motorL2 = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
-	motorR1 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
-	motorR2 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
+	motorL1 = ev3.OpenTextW(devs.OutA, ev3.DutyCycleSp)
+	motorL2 = ev3.OpenTextW(devs.OutB, ev3.DutyCycleSp)
+	motorR1 = ev3.OpenTextW(devs.OutC, ev3.DutyCycleSp)
+	motorR2 = ev3.OpenTextW(devs.OutD, ev3.DutyCycleSp)
 
 	// Reset motor speed
 	motorL1.Value = 0
