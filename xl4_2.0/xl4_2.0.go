@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"go-bots/beep"
+
 	"go-bots/xl4_2.0/config"
 )
 
@@ -26,6 +28,7 @@ var initializationTime time.Time
 var motorL1, motorL2, motorR1, motorR2 *ev3.Attribute
 var irL, irFL, irFR, irR *ev3.Attribute
 var irRemote1, irRemote2, irRemote3, irRemote4 *ev3.Attribute
+var buttons *ev3.Buttons
 
 var conf config.Config
 
@@ -117,6 +120,8 @@ func setIrRemoteMode(remoteChannel int) {
 func initialize() {
 	initializationTime = time.Now()
 
+	buttons = ev3.OpenButtons()
+
 	devs = ev3.Scan(&ev3.OutPortModes{
 		OutA: ev3.OutPortModeDcMotor,
 		OutB: ev3.OutPortModeDcMotor,
@@ -170,6 +175,11 @@ func initialize() {
 }
 
 func close() {
+	beep.CCC()
+
+	// Close buttons
+	buttons.Close()
+
 	// Stop motors
 	ev3.RunCommand(devs.OutA, ev3.CmdStop)
 	ev3.RunCommand(devs.OutB, ev3.CmdStop)
@@ -301,24 +311,29 @@ func checkVision() bool {
 
 var strategyDirection = 0
 
-func chooseStrategy(channelNumber int) {
+func chooseStrategy(channelNumber int) bool {
 	setIrRemoteMode(channelNumber)
 	for {
 		now := currentTicks()
 		move(0, 0, now)
 		remoteValue := readRemote()
 
-		if remoteValue == 3 {
+		if remoteValue == 11 {
+			return true
+		} else if remoteValue == 3 {
+			beep.GC()
 			strategyDirection = -1
 		} else if remoteValue == 4 {
+			beep.CG()
 			strategyDirection = 1
 		} else if remoteValue == 2 {
+			beep.GG()
 			strategyDirection = 0
 		} else if remoteValue == 1 {
-			waitBegin()
-			return
+			beep.C()
+			return false
 		}
-		print(strategyDirection)
+		// print(strategyDirection)
 	}
 }
 
@@ -329,14 +344,13 @@ func waitBegin() {
 		now := currentTicks()
 		elapsed := now - start
 		move(0, 0, now)
-		if elapsed >= 5000000 {
-			strategy()
+		if elapsed >= 4800000 {
 			return
 		}
 	}
 }
 
-func strategy() {
+func strategy() ev3.Direction {
 	setIrProxMode()
 	print("strategy")
 	for {
@@ -344,16 +358,16 @@ func strategy() {
 		move(0, 0, now)
 
 		if strategyDirection == -1 {
-			strategyLeft()
+			return strategyLeft()
 		} else if strategyDirection == 0 {
-			strategyStraight()
+			return strategyStraight()
 		} else if strategyDirection == 1 {
-			strategyRight()
+			return strategyRight()
 		}
 	}
 }
 
-func strategyLeft() {
+func strategyLeft() ev3.Direction {
 	print("strategy left")
 	startR1 := currentTicks()
 	for {
@@ -362,8 +376,7 @@ func strategyLeft() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Right)
-			return
+			return ev3.Right
 		}
 		move(-20, conf.MaxSpeed, now)
 	}
@@ -374,8 +387,7 @@ func strategyLeft() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Right)
-			return
+			return ev3.Right
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
@@ -386,8 +398,7 @@ func strategyLeft() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Right)
-			return
+			return ev3.Right
 		}
 		move(conf.MaxSpeed, -20, now)
 	}
@@ -398,16 +409,14 @@ func strategyLeft() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Right)
-			return
+			return ev3.Right
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
-	track(ev3.Right)
-	return
+	return ev3.Right
 }
 
-func strategyStraight() {
+func strategyStraight() ev3.Direction {
 	print("strategy straight")
 	start := currentTicks()
 	for {
@@ -416,16 +425,14 @@ func strategyStraight() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Left)
-			return
+			return ev3.Right
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
-	track(ev3.Left)
-	return
+	return ev3.Right
 }
 
-func strategyRight() {
+func strategyRight() ev3.Direction {
 	print("strategy right")
 	startR1 := currentTicks()
 	for {
@@ -434,8 +441,7 @@ func strategyRight() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Left)
-			return
+			return ev3.Left
 		}
 		move(conf.MaxSpeed, -20, now)
 	}
@@ -446,8 +452,7 @@ func strategyRight() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Left)
-			return
+			return ev3.Left
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
@@ -458,8 +463,7 @@ func strategyRight() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Left)
-			return
+			return ev3.Left
 		}
 		move(-20, conf.MaxSpeed, now)
 	}
@@ -470,18 +474,19 @@ func strategyRight() {
 			break
 		}
 		if checkVision() {
-			track(ev3.Left)
-			return
+			return ev3.Left
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
-	track(ev3.Left)
-	return
+	return ev3.Left
 }
 
 func track(dir ev3.Direction) {
 	print("track", irL.Value, irFL.Value, irFR.Value, irR.Value)
 	for {
+		if buttons.Up || buttons.Down || buttons.Left || buttons.Right || buttons.Back || buttons.Enter {
+			return
+		}
 		now := currentTicks()
 		read()
 		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
@@ -535,26 +540,16 @@ func main() {
 	initialize()
 	defer close()
 
+	beep.G()
+
 	conf = config.Default()
 
-	/*
-		start := currentTicks()
-		for {
-			now := currentTicks()
-			if ticksToMillis(now-start) > 100 {
-				break
-			}
-			read()
-			move(0, 0, now)
+	for {
+		if chooseStrategy(1) {
+			return
 		}
-		start = currentTicks()
-		for {
-			now := currentTicks()
-			if ticksToMillis(now-start) > 1000 {
-				break
-			}
-			read()
-			move(config.MaxSpeed, config.MaxSpeed, now)
-	*/
-	chooseStrategy(1)
+		waitBegin()
+		trackDir := strategy()
+		track(trackDir)
+	}
 }
