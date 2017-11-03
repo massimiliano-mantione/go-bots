@@ -23,16 +23,16 @@ func handleSignals() {
 var devs *ev3.Devices
 var initializationTime time.Time
 var motorL1, motorL2, motorR1, motorR2 *ev3.Attribute
-var cLL, cL, cR, cRR *ev3.Attribute
+var cF, cL, cR, cB *ev3.Attribute
 var buttons *ev3.Buttons
 
 var conf config.Config
 
 func closeSensors() {
-	cLL.Close()
+	cF.Close()
 	cL.Close()
 	cR.Close()
-	cRR.Close()
+	cB.Close()
 }
 
 func setSensorsMode() {
@@ -41,14 +41,18 @@ func setSensorsMode() {
 	ev3.SetMode(devs.In3, ev3.ColorModeRgbRaw)
 	ev3.SetMode(devs.In4, ev3.ColorModeRgbRaw)
 
-	cLL = ev3.OpenBinaryR(devs.In1, ev3.BinData, 3, 2)
+	cF = ev3.OpenBinaryR(devs.In1, ev3.BinData, 3, 2)
 	cL = ev3.OpenBinaryR(devs.In2, ev3.BinData, 3, 2)
 	cR = ev3.OpenBinaryR(devs.In3, ev3.BinData, 3, 2)
-	cRR = ev3.OpenBinaryR(devs.In4, ev3.BinData, 3, 2)
+	cB = ev3.OpenBinaryR(devs.In4, ev3.BinData, 3, 2)
+}
+
+func initializeTime() {
+	initializationTime = time.Now()
 }
 
 func initialize() {
-	initializationTime = time.Now()
+	initializeTime()
 
 	buttons = ev3.OpenButtons(true)
 
@@ -176,10 +180,10 @@ func move(left int, right int, now int) {
 }
 
 func read() {
-	cLL.Sync()
+	cF.Sync()
 	cL.Sync()
 	cR.Sync()
-	cRR.Sync()
+	cB.Sync()
 }
 
 func durationToTicks(d time.Duration) int {
@@ -231,7 +235,8 @@ func waitEnter() {
 	}
 }
 
-func waitOneSecond() {
+func waitOneSecond() int {
+	initializeTime()
 	print("wait one second")
 	start := currentTicks()
 	for {
@@ -242,14 +247,11 @@ func waitOneSecond() {
 			quit("Done")
 		}
 		if elapsed >= 1000000 {
-			break
+			return now
 		}
 	}
 }
 
-func sumSensor(attr *ev3.Attribute) int {
-	return attr.Value + attr.Value1 + attr.Value2
-}
 func trimSensor(attr *ev3.Attribute) int {
 	value := attr.Value + attr.Value1 + attr.Value2
 	if value < conf.SensorMin {
@@ -261,33 +263,14 @@ func trimSensor(attr *ev3.Attribute) int {
 	}
 	return value
 }
-func isWhite(value int) bool {
-	return value >= conf.SensorSpan
+func isOnTrack(value int) bool {
+	return value < conf.SensorSpan
 }
 func distanceFromSensor(value int) int {
 	return value * conf.SensorRadius / conf.SensorSpan
 }
 func positionBetweenSensors(value1 int, value2 int) int {
 	return (value1 - value2) * conf.SensorRadius / conf.SensorSpan
-}
-
-func hintCenter() {
-	nextPifLost = 0
-}
-func hintLeft() {
-	nextPifLost = -conf.SensorRadius * 4
-}
-func hintRight() {
-	nextPifLost = conf.SensorRadius * 4
-}
-func hintBetween(left int, right int) {
-	if right > left {
-		hintLeft()
-	} else if left > right {
-		hintRight()
-	} else {
-		hintCenter()
-	}
 }
 
 func sign(value int) int {
@@ -300,167 +283,138 @@ func sign(value int) int {
 	}
 }
 
-var currentP int
-var currentPTicks int
-var lastP int
-var lastPTicks int
-var nextPifLost int
+type sensorReadType int
 
-func processSensorData() {
+const (
+	bitB sensorReadType = 1 << iota
+	bitR
+	bitL
+	bitF
+)
+
+const (
+	sensorReadZero sensorReadType = iota
+	sensorReadB
+	sensorReadR
+	sensorReadRB
+	sensorReadL
+	sensorReadLB
+	sensorReadLR
+	sensorReadLRB
+	sensorReadF
+	sensorReadFB
+	sensorReadFR
+	sensorReadFRB
+	sensorReadFL
+	sensorReadFLB
+	sensorReadFLR
+	sensorReadFLRB
+)
+
+var sensorReadNames = [16]string{
+	"---",
+	"-v-",
+	"-->",
+	"-v>",
+	"<--",
+	"<v-",
+	"<->",
+	"<v>",
+	"-^-",
+	"-X-",
+	"-^>",
+	"-X>",
+	"<^-",
+	"<X-",
+	"<^>",
+	"<X>",
+}
+
+const lineStatusStraight = "-|-"
+const lineStatusStraightLeft = "<|-"
+const lineStatusLeft = "<--"
+const lineStatusStraightRight = "-|>"
+const lineStatusRight = "-->"
+const lineStatusFrontLeft = "<^-"
+const lineStatusFrontRight = "-^>"
+const lineStatusBackLeft = "<v-"
+const lineStatusBackRight = "-v>"
+const lineStatusOut = "---"
+const lineStatusCross = "-+-"
+
+func processSensorData() (sensorRead sensorReadType, pos int, hint int, cross bool, out bool) {
 	read()
-	ll, l, r, rr := trimSensor(cLL), trimSensor(cL), trimSensor(cR), trimSensor(cRR)
-	radius := conf.SensorRadius
+	f, l, r, b := trimSensor(cB), trimSensor(cL), trimSensor(cR), trimSensor(cB)
 
-	lastP = currentP
-	lastPTicks = currentPTicks
-	currentPTicks = currentTicks()
-
-	status := "XXXX"
-
-	if isWhite(ll) {
-		if isWhite(l) {
-			// left - -
-			if isWhite(r) {
-				if isWhite(rr) {
-					// We lost the line, use last hint
-					status = "----"
-					currentP = nextPifLost
-				} else {
-					// Far right
-					status = "---X"
-					currentP = (radius * 3) + distanceFromSensor(rr)
-					hintRight()
-				}
-			} else {
-				if isWhite(rr) {
-					// Centered on r
-					status = "--X-"
-					currentP = radius - distanceFromSensor(r)
-					hintCenter()
-				} else {
-					// Angle (r, rr)
-					status = "--XX"
-					currentP = (radius * 2) + positionBetweenSensors(r, rr)
-					hintRight()
-				}
-			}
-		} else {
-			// left - l
-			if isWhite(r) {
-				if isWhite(rr) {
-					// Centered on l
-					status = "-X--"
-					currentP = -radius + distanceFromSensor(l)
-					hintCenter()
-				} else {
-					// Inconclusive (l, rr), keep last value
-					status = "-X-X"
-					currentP = lastP
-					hintRight()
-				}
-			} else {
-				if isWhite(rr) {
-					// Between l and r
-					status = "-XX-"
-					currentP = lastP
-					hintBetween(r, l)
-				} else {
-					// Angle (l, r, rr)
-					status = "-XXX"
-					currentP = lastP
-					hintRight()
-				}
-			}
-		}
-	} else {
-		if isWhite(l) {
-			// left ll -
-			if isWhite(r) {
-				if isWhite(rr) {
-					// Far left
-					status = "X---"
-					currentP = -(radius * 3) - distanceFromSensor(ll)
-					hintLeft()
-				} else {
-					// Inconclusive (ll, rr)
-					status = "X--X"
-					currentP = lastP
-					hintBetween(ll, rr)
-				}
-			} else {
-				if isWhite(rr) {
-					// Inconclusive (ll, r)
-					status = "X-X-"
-					currentP = lastP
-					hintLeft()
-				} else {
-					// Inconclusive (ll, r, rr)
-					status = "X-XX"
-					currentP = lastP
-					hintLeft()
-				}
-			}
-		} else {
-			// left ll l
-			if isWhite(r) {
-				if isWhite(rr) {
-					// Angle (ll, l)
-					status = "XX--"
-					currentP = -(radius * 2) + positionBetweenSensors(ll, l)
-					hintLeft()
-				} else {
-					// Inconclusive (ll, l, rr)
-					status = "XX-X"
-					currentP = lastP
-					hintLeft()
-				}
-			} else {
-				if isWhite(rr) {
-					// Angle (ll, l, r)
-					status = "XXX-"
-					currentP = lastP
-					hintLeft()
-				} else {
-					// Inconclusive (ll, l, r, rr)
-					status = "XXXX"
-					currentP = lastP
-					hintBetween(ll, rr)
-				}
-			}
-		}
+	sensorRead = sensorReadZero
+	if isOnTrack(b) {
+		sensorRead |= bitB
+	}
+	if isOnTrack(r) {
+		sensorRead |= bitR
+	}
+	if isOnTrack(l) {
+		sensorRead |= bitL
+	}
+	if isOnTrack(f) {
+		sensorRead |= bitF
 	}
 
-	deltaTicks := currentPTicks - lastPTicks
-	if deltaTicks < conf.MinDTicks {
-		deltaTicks = conf.MinDTicks
-	} else if deltaTicks > conf.MaxDTicks {
-		deltaTicks = conf.MaxDTicks
+	switch sensorRead {
+	case sensorReadZero:
+	case sensorReadB:
+	case sensorReadF:
+		// Out
+		out = true
+		pos, hint, cross = 0, 0, false
+	case sensorReadR:
+		pos = conf.SensorRadius*2 + distanceFromSensor(r)
+		hint = 0
+		cross, out = false, false
+	case sensorReadRB:
+		pos = conf.SensorRadius + positionBetweenSensors(b, r)
+		hint = 1
+		cross, out = false, false
+	case sensorReadL:
+		pos = -conf.SensorRadius*2 - distanceFromSensor(l)
+		hint = 0
+		cross, out = false, false
+	case sensorReadLB:
+		pos = -conf.SensorRadius + positionBetweenSensors(l, b)
+		hint = 1
+		cross, out = false, false
+	case sensorReadLR:
+	case sensorReadLRB:
+	case sensorReadFLRB:
+	case sensorReadFLR:
+		// Cross
+		cross = true
+		pos, hint, out = 0, 0, false
+	case sensorReadFB:
+		pos = 0
+		hint = 0
+		cross, out = false, false
+	case sensorReadFR:
+		pos = conf.SensorRadius + positionBetweenSensors(f, r)
+		hint = -1
+		cross, out = false, false
+	case sensorReadFRB:
+		pos = conf.SensorRadius + positionBetweenSensors((f+b)/2, r)
+		hint = 0
+		cross, out = false, false
+	case sensorReadFL:
+		pos = -conf.SensorRadius + positionBetweenSensors(l, f)
+		hint = 0
+		cross, out = false, false
+	case sensorReadFLB:
+		pos = -conf.SensorRadius + positionBetweenSensors(l, (f+b)/2)
+		hint = 0
+		cross, out = false, false
+	default:
+		print("Error: reading", sensorRead)
 	}
-	deltaP := currentP - lastP
-	currentD := (conf.DTicksBoost * deltaP) / deltaTicks
 
-	factorP := ((currentP * conf.ParamP1) + (sign(currentP) * currentP * currentP * conf.ParamP2)) / conf.ParamPR
-	factorD := ((currentD * conf.ParamD1) + (sign(currentD) * currentD * currentD * conf.ParamD2)) / conf.ParamDR
-	steering := (factorP + factorD) / conf.InnerBrakeFactor
-
-	// print(status, ll, "[", sumSensor(cLL), "]", l, "[", sumSensor(cL), "]", r, "[", sumSensor(cR), "]", rr, "[", sumSensor(cRR), "]", "p", currentP, "dP", deltaP, "dP/dT", currentD, "dT", deltaTicks/1000, (currentPTicks-lastPTicks)/1000)
-	// print(status, "P", currentP, "dP", deltaP, "dP/dT", currentD, "dT", deltaTicks/1000, "T", (currentPTicks-lastPTicks)/1000)
-	print(status, "P", currentP, "f", factorP, factorD, "s", steering, "T", (currentPTicks-lastPTicks)/1000)
-
-	if steering > 0 {
-		if steering > conf.MaxSteering {
-			steering = conf.MaxSteering
-		}
-		move(conf.MaxSpeed, conf.MaxSpeed-steering, currentPTicks)
-	} else if steering < 0 {
-		steering = -steering
-		if steering > conf.MaxSteering {
-			steering = conf.MaxSteering
-		}
-		move(conf.MaxSpeed-steering, conf.MaxSpeed, currentPTicks)
-	} else {
-		move(conf.MaxSpeed, conf.MaxSpeed, currentPTicks)
-	}
+	return
 }
 
 func moveOneSecond() {
@@ -476,23 +430,64 @@ func moveOneSecond() {
 	}
 }
 
-func followLine() {
+func followLine(lastGivenTicks int) {
 	print("following line")
+
+	lastTicks := lastGivenTicks
+	lastPos := 0
+	lastPosD := 0
+
 	for {
-		processSensorData()
+		now := currentTicks()
+		sr, pos, hint, cross, out := processSensorData()
+		posD := 0
+
+		if out {
+			pos = conf.SensorRadius * 3 * sign(lastPos)
+			hint = sign(pos)
+			posD = lastPosD
+		} else if cross {
+			pos = lastPos
+			posD = 0
+		} else {
+			dTicks := now - lastTicks
+			if dTicks < 5 {
+				dTicks = 5
+			}
+			if dTicks > 100000 {
+				dTicks = 100000
+			}
+			posD = (pos - lastPos) / dTicks
+			posD += hint
+		}
+
+		lastTicks, lastPos, lastPosD = now, pos, posD
+
+		factorP := ((pos * conf.KP) + (sign(pos) * pos * pos * conf.KP2)) / conf.KPR
+		factorD := ((posD * conf.KD) + (sign(posD) * posD * posD * conf.KD2)) / conf.KDR
+		steering := (factorP - factorD) / conf.KR
+
+		print(sensorReadNames[sr], "pos", pos, "fP", factorP, "fD", factorD, "t", now-lastTicks, "s", steering)
+
+		maxSteering := (conf.MaxSpeed * conf.MaxSteeringPC) / 100
+
+		if steering > 0 {
+			if steering > maxSteering {
+				steering = maxSteering
+			}
+			move(conf.MaxSpeed, conf.MaxSpeed-steering, now)
+		} else if steering < 0 {
+			steering = -steering
+			if steering > maxSteering {
+				steering = maxSteering
+			}
+			move(conf.MaxSpeed-steering, conf.MaxSpeed, now)
+		} else {
+			move(conf.MaxSpeed, conf.MaxSpeed, now)
+		}
+
 		if buttons.Enter {
 			print("stopping")
-			break
-		}
-		if buttons.Back {
-			print("reloading config")
-			newConf, err := config.FromFile("greyhound.toml")
-			if err != nil {
-				print("Error reading conf:", err)
-			} else {
-				conf = newConf
-				print("Configuration reloaded:", conf)
-			}
 			break
 		}
 	}
@@ -514,7 +509,6 @@ func main() {
 	}
 
 	waitEnter()
-	waitOneSecond()
-	// moveOneSecond()
-	followLine()
+	lastGivenTicks := waitOneSecond()
+	followLine(lastGivenTicks)
 }
