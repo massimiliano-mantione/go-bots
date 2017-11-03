@@ -133,10 +133,13 @@ var lastSpeedLeft int
 var lastSpeedRight int
 
 const accelPerTicks int = 5
+const accelSpeedFactor int = 10000
 
 func move(left int, right int, now int) {
 	ticks := now - lastMoveTicks
 	lastMoveTicks = now
+	right *= accelSpeedFactor
+	left *= accelSpeedFactor
 
 	nextSpeedLeft := lastSpeedLeft
 	nextSpeedRight := lastSpeedRight
@@ -168,10 +171,10 @@ func move(left int, right int, now int) {
 	lastSpeedLeft = nextSpeedLeft
 	lastSpeedRight = nextSpeedRight
 
-	motorL1.Value = nextSpeedLeft / 10000
-	motorL2.Value = nextSpeedLeft / 10000
-	motorR1.Value = -nextSpeedRight / 10000
-	motorR2.Value = -nextSpeedRight / 10000
+	motorL1.Value = nextSpeedLeft / accelSpeedFactor
+	motorL2.Value = nextSpeedLeft / accelSpeedFactor
+	motorR1.Value = -nextSpeedRight / accelSpeedFactor
+	motorR2.Value = -nextSpeedRight / accelSpeedFactor
 
 	motorL1.Sync()
 	motorL2.Sync()
@@ -330,17 +333,17 @@ var sensorReadNames = [16]string{
 	"<X>",
 }
 
-const lineStatusStraight = "-|-"
-const lineStatusStraightLeft = "<|-"
-const lineStatusLeft = "<--"
-const lineStatusStraightRight = "-|>"
-const lineStatusRight = "-->"
-const lineStatusFrontLeft = "<^-"
-const lineStatusFrontRight = "-^>"
-const lineStatusBackLeft = "<v-"
-const lineStatusBackRight = "-v>"
-const lineStatusOut = "---"
-const lineStatusCross = "-+-"
+// const lineStatusStraight = "-|-"
+// const lineStatusStraightLeft = "<|-"
+// const lineStatusLeft = "<--"
+// const lineStatusStraightRight = "-|>"
+// const lineStatusRight = "-->"
+// const lineStatusFrontLeft = "<^-"
+// const lineStatusFrontRight = "-^>"
+// const lineStatusBackLeft = "<v-"
+// const lineStatusBackRight = "-v>"
+// const lineStatusOut = "---"
+// const lineStatusCross = "-+-"
 
 func processSensorData() (sensorRead sensorReadType, pos int, hint int, cross bool, out bool) {
 	read()
@@ -463,23 +466,27 @@ func followLine(lastGivenTicks int) {
 
 		lastTicks, lastPos, lastPosD = now, pos, posD
 
-		factorP := ((pos * conf.KP) + (sign(pos) * pos * pos * conf.KP2)) / conf.KPR
-		factorD := ((posD * conf.KD) + (sign(posD) * posD * posD * conf.KD2)) / conf.KDR
-		steering := (factorP - factorD) / conf.KR
+		pos2 := sign(pos) * pos * pos
+		posD2 := sign(posD) * posD * posD
 
-		print(sensorReadNames[sr], "pos", pos, "fP", factorP, "fD", factorD, "t", now-lastTicks, "s", steering)
+		factorP := (pos * conf.KP * conf.MaxSpeed) / (conf.MaxPos * 100)
+		factorP2 := (pos2 * conf.KP2 * conf.MaxSpeed) / (conf.MaxPos2 * 100)
+		factorD := (posD * conf.KD * conf.MaxSpeed) / (conf.MaxPosD * 100)
+		factorD2 := (posD2 * conf.KD2 * conf.MaxSpeed) / (conf.MaxPosD2 * 100)
 
-		maxSteering := (conf.MaxSpeed * conf.MaxSteeringPC) / 100
+		steering := factorP + factorP2 - factorD - factorD2
+
+		print(sensorReadNames[sr], "pos", pos, "f", factorP, factorP2, factorD, factorD2, "t", (now-lastTicks)/1000, "s", steering)
 
 		if steering > 0 {
-			if steering > maxSteering {
-				steering = maxSteering
+			if steering > conf.MaxSteering {
+				steering = conf.MaxSteering
 			}
 			move(conf.MaxSpeed, conf.MaxSpeed-steering, now)
 		} else if steering < 0 {
 			steering = -steering
-			if steering > maxSteering {
-				steering = maxSteering
+			if steering > conf.MaxSteering {
+				steering = conf.MaxSteering
 			}
 			move(conf.MaxSpeed-steering, conf.MaxSpeed, now)
 		} else {
