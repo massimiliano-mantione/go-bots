@@ -15,7 +15,6 @@ type Config struct {
 	SensorMin     int
 	MinDTicks     int
 	MaxDTicks     int
-	DTicksBoost   int
 	KP            int
 	KP2           int
 	KPR           int
@@ -36,7 +35,6 @@ func Default() Config {
 		SensorMin:     80,
 		MinDTicks:     10,
 		MaxDTicks:     30000,
-		DTicksBoost:   100000,
 		KP:            1800,
 		KP2:           1,
 		KPR:           4,
