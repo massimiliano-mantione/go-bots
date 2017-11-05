@@ -4,11 +4,18 @@ import (
 	"os/exec"
 )
 
+var isPlaying bool
+
 func play(args ...string) {
+	if isPlaying {
+		return
+	}
+	isPlaying = true
 	cmd := exec.Command("beep", args...)
 	cmd.Start()
 	go func() {
 		cmd.Wait()
+		isPlaying = false
 	}()
 }
 

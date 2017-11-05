@@ -120,7 +120,7 @@ func setIrRemoteMode(remoteChannel int) {
 func initialize() {
 	initializationTime = time.Now()
 
-	buttons = ev3.OpenButtons()
+	buttons = ev3.OpenButtons(false)
 
 	devs = ev3.Scan(&ev3.OutPortModes{
 		OutA: ev3.OutPortModeDcMotor,
@@ -201,15 +201,17 @@ var lastMoveTicks int
 var lastSpeedLeft int
 var lastSpeedRight int
 
-const accelPerTicks int = 5
+const accelSpeedFactor int = 10000
 
 func move(left int, right int, now int) {
 	ticks := now - lastMoveTicks
 	lastMoveTicks = now
+	right *= accelSpeedFactor
+	left *= accelSpeedFactor
 
 	nextSpeedLeft := lastSpeedLeft
 	nextSpeedRight := lastSpeedRight
-	delta := ticks * accelPerTicks
+	delta := ticks * conf.AccelPerTicks
 	// delta := ticks * ticks * accelPerTicks
 
 	if left > nextSpeedLeft {
@@ -237,10 +239,10 @@ func move(left int, right int, now int) {
 	lastSpeedLeft = nextSpeedLeft
 	lastSpeedRight = nextSpeedRight
 
-	motorL1.Value = nextSpeedLeft / 10000
-	motorL2.Value = -nextSpeedLeft / 10000
-	motorR1.Value = nextSpeedRight / 10000
-	motorR2.Value = -nextSpeedRight / 10000
+	motorL1.Value = nextSpeedLeft / accelSpeedFactor
+	motorL2.Value = -nextSpeedLeft / accelSpeedFactor
+	motorR1.Value = nextSpeedRight / accelSpeedFactor
+	motorR2.Value = -nextSpeedRight / accelSpeedFactor
 
 	// motorL1.Value = 0
 	// motorL2.Value = 0
@@ -309,6 +311,18 @@ func checkVision() bool {
 	return false
 }
 
+func loadConfig() {
+	newConf, err := config.FromFile("xl4_2.0.toml")
+	if err != nil {
+		print("Error reading conf:", err)
+		conf = config.Default()
+		print("Using default conf", conf)
+	} else {
+		conf = newConf
+		print("Configuration loaded:", conf)
+	}
+}
+
 var strategyDirection = 0
 
 func chooseStrategy(channelNumber int) bool {
@@ -321,12 +335,15 @@ func chooseStrategy(channelNumber int) bool {
 		if remoteValue == 11 {
 			return true
 		} else if remoteValue == 3 {
+			loadConfig()
 			beep.GC()
 			strategyDirection = -1
 		} else if remoteValue == 4 {
+			loadConfig()
 			beep.CG()
 			strategyDirection = 1
 		} else if remoteValue == 2 {
+			loadConfig()
 			beep.GG()
 			strategyDirection = 0
 		} else if remoteValue == 1 {
@@ -425,11 +442,11 @@ func strategyStraight() ev3.Direction {
 			break
 		}
 		if checkVision() {
-			return ev3.Right
+			return ev3.Left
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
-	return ev3.Right
+	return ev3.Left
 }
 
 func strategyRight() ev3.Direction {
@@ -489,7 +506,7 @@ func track(dir ev3.Direction) {
 		}
 		now := currentTicks()
 		read()
-		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
+		// print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
 		if irFL.Value < conf.MaxIrValue {
 			move(conf.TrackSpeed, conf.TrackSpeed, now)
@@ -528,7 +545,7 @@ func main() {
 
 	beep.G()
 
-	conf = config.Default()
+	// conf = config.Default()
 
 	for {
 		if chooseStrategy(1) {

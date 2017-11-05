@@ -1,0 +1,11 @@
+AccelPerTicks=        30
+MaxSpeed=             100
+TrackTurnSpeed=       50
+SeekTurnSpeed=        50
+TrackSpeed=           100
+MaxIrValue=           0
+StrategyR1Time=       440
+StrategyS1Time=       240
+StrategyR2Time=       940
+StrategyS2Time=       240
+StrategyStraightTime= 800
