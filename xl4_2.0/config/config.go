@@ -27,7 +27,7 @@ func Default() Config {
 		TrackTurnSpeed:       400000,
 		SeekTurnSpeed:        400000,
 		TrackSpeed:           1000000,
-		MaxIrValue:           0,
+		MaxIrValue:           30,
 		StrategyR1Time:       220000,
 		StrategyS1Time:       120000,
 		StrategyR2Time:       470000,

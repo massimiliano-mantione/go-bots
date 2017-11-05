@@ -491,15 +491,7 @@ func track(dir ev3.Direction) {
 		read()
 		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
-		if irL.Value < conf.MaxIrValue {
-			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, now)
-			dir = ev3.Left
-			print("LEFT")
-		} else if irR.Value < conf.MaxIrValue {
-			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed, now)
-			dir = ev3.Right
-			print("RIGHT")
-		} else if irFL.Value < conf.MaxIrValue {
+		if irFL.Value < conf.MaxIrValue {
 			move(conf.TrackSpeed, conf.TrackSpeed, now)
 			dir = ev3.Left
 			print("FRONT LEFT")
@@ -507,6 +499,14 @@ func track(dir ev3.Direction) {
 			move(conf.TrackSpeed, conf.TrackSpeed, now)
 			dir = ev3.Right
 			print("FRONT RIGHT")
+		} else if irL.Value < conf.MaxIrValue {
+			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, now)
+			dir = ev3.Left
+			print("LEFT")
+		} else if irR.Value < conf.MaxIrValue {
+			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed, now)
+			dir = ev3.Right
+			print("RIGHT")
 		} else {
 			if dir == ev3.Right {
 				move(conf.SeekTurnSpeed, -conf.SeekTurnSpeed, now)
@@ -517,20 +517,6 @@ func track(dir ev3.Direction) {
 			} else {
 				print("SEEK NONE")
 			}
-		}
-	}
-}
-
-func testRemote() {
-	setIrRemoteMode(1)
-
-	for {
-		now := currentTicks()
-
-		move(0, 0, now)
-		rem := readRemote()
-		if rem != 0 {
-			print("received", rem)
 		}
 	}
 }
