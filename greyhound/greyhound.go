@@ -407,7 +407,7 @@ func processSensorData() (sensorRead sensorReadType, pos int, hint int, cross bo
 		cross, out = false, false
 	case sensorReadFL:
 		pos = -conf.SensorRadius + positionBetweenSensors(l, f)
-		hint = 0
+		hint = 1
 		cross, out = false, false
 	case sensorReadFLB:
 		pos = -conf.SensorRadius + positionBetweenSensors(l, (f+b)/2)
