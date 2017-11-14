@@ -364,9 +364,7 @@ func processSensorData() (sensorRead sensorReadType, pos int, hint int, cross bo
 	}
 
 	switch sensorRead {
-	case sensorReadZero:
-	case sensorReadB:
-	case sensorReadF:
+	case sensorReadZero, sensorReadB, sensorReadF:
 		// Out
 		out = true
 		pos, hint, cross = 0, 0, false
@@ -386,10 +384,7 @@ func processSensorData() (sensorRead sensorReadType, pos int, hint int, cross bo
 		pos = -conf.SensorRadius + positionBetweenSensors(l, b)
 		hint = 1
 		cross, out = false, false
-	case sensorReadLR:
-	case sensorReadLRB:
-	case sensorReadFLRB:
-	case sensorReadFLR:
+	case sensorReadLR, sensorReadLRB, sensorReadFLRB, sensorReadFLR:
 		// Cross
 		cross = true
 		pos, hint, out = 0, 0, false
@@ -460,11 +455,9 @@ func followLine(lastGivenTicks int) {
 			if dTicks > 100000 {
 				dTicks = 100000
 			}
-			posD = (pos - lastPos) / dTicks
+			posD = ((pos - lastPos) * 100000) / dTicks
 			posD += hint
 		}
-
-		lastTicks, lastPos, lastPosD = now, pos, posD
 
 		pos2 := sign(pos) * pos * pos
 		posD2 := sign(posD) * posD * posD
@@ -476,7 +469,9 @@ func followLine(lastGivenTicks int) {
 
 		steering := factorP + factorP2 - factorD - factorD2
 
-		print(sensorReadNames[sr], "pos", pos, "f", factorP, factorP2, factorD, factorD2, "t", (now-lastTicks)/1000, "s", steering)
+		print(sensorReadNames[sr], "pos", pos, "d", posD, "f", factorP, factorP2, factorD, factorD2, "t", (now-lastTicks)/1000, "s", steering)
+
+		lastTicks, lastPos, lastPosD = now, pos, posD
 
 		if steering > 0 {
 			if steering > conf.MaxSteering {
