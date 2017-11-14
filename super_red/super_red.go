@@ -439,15 +439,7 @@ func track(dir ev3.Direction) {
 		read()
 		print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
-		if irL.Value < conf.MaxIrSide {
-			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed)
-			dir = ev3.Left
-			print("LEFT")
-		} else if irR.Value < conf.MaxIrSide {
-			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed)
-			dir = ev3.Right
-			print("RIGHT")
-		} else if irFL.Value < conf.MaxIrFront {
+		if irFL.Value < conf.MaxIrFront {
 			move(conf.TrackSpeed, conf.TrackSpeed)
 			dir = ev3.Left
 			print("FRONT LEFT")
@@ -455,6 +447,14 @@ func track(dir ev3.Direction) {
 			move(conf.TrackSpeed, conf.TrackSpeed)
 			dir = ev3.Right
 			print("FRONT RIGHT")
+		} else if irL.Value < conf.MaxIrSide {
+			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed)
+			dir = ev3.Left
+			print("LEFT")
+		} else if irR.Value < conf.MaxIrSide {
+			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed)
+			dir = ev3.Right
+			print("RIGHT")
 		} else {
 			if dir == ev3.Right {
 				move(conf.SeekTurnSpeed, -conf.SeekTurnSpeed)
