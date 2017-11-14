@@ -305,7 +305,8 @@ func quit(data ...interface{}) {
 
 func checkVision() bool {
 	read()
-	if irL.Value < conf.MaxIrValue || irFL.Value < conf.MaxIrValue || irFR.Value < conf.MaxIrValue || irR.Value < conf.MaxIrValue {
+	if irL.Value < conf.MaxIrSide || irFL.Value < conf.MaxIrFront || irFR.Value < conf.MaxIrFront || irR.Value < conf.MaxIrSide {
+		print("checkvision true", irL.Value, irFL.Value, irFR.Value, irR.Value)
 		return true
 	}
 	return false
@@ -430,6 +431,7 @@ func strategyLeft() ev3.Direction {
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
+	print("ho finito strategy left, seeeee!!!")
 	return ev3.Right
 }
 
@@ -446,6 +448,7 @@ func strategyStraight() ev3.Direction {
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
+	print("ho finito strategy straight, seeeee!!!")
 	return ev3.Left
 }
 
@@ -495,6 +498,7 @@ func strategyRight() ev3.Direction {
 		}
 		move(conf.MaxSpeed, conf.MaxSpeed, now)
 	}
+	print("ho finito strategy right, seeeee!!!")
 	return ev3.Left
 }
 
@@ -508,19 +512,19 @@ func track(dir ev3.Direction) {
 		read()
 		// print(irL.Value, irFL.Value, irFR.Value, irR.Value)
 
-		if irFL.Value < conf.MaxIrValue {
+		if irFL.Value < conf.MaxIrFront {
 			move(conf.TrackSpeed, conf.TrackSpeed, now)
 			dir = ev3.Left
 			print("FRONT LEFT")
-		} else if irFR.Value < conf.MaxIrValue {
+		} else if irFR.Value < conf.MaxIrFront {
 			move(conf.TrackSpeed, conf.TrackSpeed, now)
 			dir = ev3.Right
 			print("FRONT RIGHT")
-		} else if irL.Value < conf.MaxIrValue {
+		} else if irL.Value < conf.MaxIrSide {
 			move(-conf.TrackTurnSpeed, conf.TrackTurnSpeed, now)
 			dir = ev3.Left
 			print("LEFT")
-		} else if irR.Value < conf.MaxIrValue {
+		} else if irR.Value < conf.MaxIrSide {
 			move(conf.TrackTurnSpeed, -conf.TrackTurnSpeed, now)
 			dir = ev3.Right
 			print("RIGHT")
