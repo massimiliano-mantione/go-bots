@@ -20,20 +20,73 @@ type Config struct {
 	KP2           int
 	KD            int
 	KD2           int
-	MaxSteering   int
 	MaxPos        int
 	MaxPos2       int
 	MaxPosD       int
 	MaxPosD2      int
+	SlowStart1    int
+	SlowEnd1      int
+	SlowSpeed1    int
+	SlowStart2    int
+	SlowEnd2      int
+	SlowSpeed2    int
+	SlowStart3    int
+	SlowEnd3      int
+	SlowSpeed3    int
+	SlowStart4    int
+	SlowEnd4      int
+	SlowSpeed4    int
+	Timeout       int
 }
 
 // CompleteConfig fills in computed configutation fields
 func CompleteConfig(c *Config) {
-	c.MaxSteering = (c.MaxSpeed * c.MaxSteeringPC) / 100
 	c.MaxPos = c.SensorRadius * 3
 	c.MaxPos2 = c.MaxPos * c.MaxPos
 	c.MaxPosD = c.MaxPos / c.MinOutMillis
 	c.MaxPosD2 = c.MaxPos * c.MaxPos
+
+	if c.SlowSpeed1 > 0 {
+		c.SlowStart1 *= 1000
+		c.SlowEnd1 *= 1000
+	} else {
+		c.SlowSpeed1 = 0
+		c.SlowStart1 = 0
+		c.SlowEnd1 = 0
+	}
+
+	if c.SlowSpeed2 > 0 {
+		c.SlowStart2 *= 1000
+		c.SlowEnd2 *= 1000
+	} else {
+		c.SlowSpeed2 = 0
+		c.SlowStart2 = 0
+		c.SlowEnd2 = 0
+	}
+
+	if c.SlowSpeed3 > 0 {
+		c.SlowStart3 *= 1000
+		c.SlowEnd3 *= 1000
+	} else {
+		c.SlowSpeed3 = 0
+		c.SlowStart3 = 0
+		c.SlowEnd3 = 0
+	}
+
+	if c.SlowSpeed4 > 0 {
+		c.SlowStart4 *= 1000
+		c.SlowEnd4 *= 1000
+	} else {
+		c.SlowSpeed4 = 0
+		c.SlowStart4 = 0
+		c.SlowEnd4 = 0
+	}
+
+	if c.Timeout > 0 {
+		c.Timeout *= 1000
+	} else {
+		c.Timeout = 0
+	}
 }
 
 // Default Config data

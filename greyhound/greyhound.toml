@@ -1,4 +1,5 @@
 MaxSpeed=         30
+
 MaxSteeringPC=    120
 SensorRadius=     100
 SensorSpan=       700
@@ -6,7 +7,26 @@ SensorMin=        80
 MinDTicks=        10
 MaxDTicks=        30000
 MinOutMillis=     10
+
 KP=               70
 KP2=              10
 KD=               0
 KD2=              0
+
+SlowStart1=       0
+SlowEnd1=         0
+SlowSpeed1=       0
+
+SlowStart2=       0
+SlowEnd2=         0
+SlowSpeed2=       0
+
+SlowStart3=       0
+SlowEnd3=         0
+SlowSpeed3=       0
+
+SlowStart4=       0
+SlowEnd4=         0
+SlowSpeed4=       0
+
+Timeout=          0

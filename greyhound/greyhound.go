@@ -440,6 +440,23 @@ func followLine(lastGivenTicks int) {
 		sr, pos, hint, cross, out := processSensorData()
 		posD := 0
 
+		var maxSpeed int
+		if conf.SlowSpeed1 > 0 && now < conf.SlowStart1 && now > conf.SlowEnd1 {
+			maxSpeed = conf.SlowSpeed1
+		} else if conf.SlowSpeed2 > 0 && now < conf.SlowStart2 && now > conf.SlowEnd2 {
+			maxSpeed = conf.SlowSpeed2
+		} else if conf.SlowSpeed3 > 0 && now < conf.SlowStart3 && now > conf.SlowEnd3 {
+			maxSpeed = conf.SlowSpeed3
+		} else if conf.SlowSpeed4 > 0 && now < conf.SlowStart4 && now > conf.SlowEnd4 {
+			maxSpeed = conf.SlowSpeed4
+		} else if conf.Timeout > 0 && now > conf.Timeout {
+			maxSpeed = 0
+		} else {
+			maxSpeed = conf.MaxSpeed
+		}
+
+		maxSteering := (maxSpeed * conf.MaxSteeringPC) / 100
+
 		if out {
 			pos = conf.SensorRadius * 3 * sign(lastPos)
 			hint = sign(pos)
@@ -462,10 +479,10 @@ func followLine(lastGivenTicks int) {
 		pos2 := sign(pos) * pos * pos
 		posD2 := sign(posD) * posD * posD
 
-		factorP := (pos * conf.KP * conf.MaxSpeed) / (conf.MaxPos * 100)
-		factorP2 := (pos2 * conf.KP2 * conf.MaxSpeed) / (conf.MaxPos2 * 100)
-		factorD := (posD * conf.KD * conf.MaxSpeed) / (conf.MaxPosD * 100)
-		factorD2 := (posD2 * conf.KD2 * conf.MaxSpeed) / (conf.MaxPosD2 * 100)
+		factorP := (pos * conf.KP * maxSpeed) / (conf.MaxPos * 100)
+		factorP2 := (pos2 * conf.KP2 * maxSpeed) / (conf.MaxPos2 * 100)
+		factorD := (posD * conf.KD * maxSpeed) / (conf.MaxPosD * 100)
+		factorD2 := (posD2 * conf.KD2 * maxSpeed) / (conf.MaxPosD2 * 100)
 
 		steering := factorP + factorP2 - factorD - factorD2
 
@@ -474,18 +491,18 @@ func followLine(lastGivenTicks int) {
 		lastTicks, lastPos, lastPosD = now, pos, posD
 
 		if steering > 0 {
-			if steering > conf.MaxSteering {
-				steering = conf.MaxSteering
+			if steering > maxSteering {
+				steering = maxSteering
 			}
-			move(conf.MaxSpeed, conf.MaxSpeed-steering, now)
+			move(maxSpeed, maxSpeed-steering, now)
 		} else if steering < 0 {
 			steering = -steering
-			if steering > conf.MaxSteering {
-				steering = conf.MaxSteering
+			if steering > maxSteering {
+				steering = maxSteering
 			}
-			move(conf.MaxSpeed-steering, conf.MaxSpeed, now)
+			move(maxSpeed-steering, maxSpeed, now)
 		} else {
-			move(conf.MaxSpeed, conf.MaxSpeed, now)
+			move(maxSpeed, maxSpeed, now)
 		}
 
 		if buttons.Enter {
