@@ -13,7 +13,8 @@ type Config struct {
 	TrackTurnSpeed       int
 	SeekTurnSpeed        int
 	TrackSpeed           int
-	MaxIrValue           int
+	MaxIrFront           int
+	MaxIrSide			int
 	StrategyR1Time       int
 	StrategyS1Time       int
 	StrategyR2Time       int
@@ -29,7 +30,8 @@ func Default() Config {
 		TrackTurnSpeed:       40,
 		SeekTurnSpeed:        40,
 		TrackSpeed:           100,
-		MaxIrValue:           30,
+		MaxIrFront:           40,
+		MaxIrSide:            20,
 		StrategyR1Time:       220,
 		StrategyS1Time:       120,
 		StrategyR2Time:       470,

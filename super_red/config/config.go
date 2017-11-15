@@ -12,7 +12,8 @@ type Config struct {
 	TrackTurnSpeed       int
 	SeekTurnSpeed        int
 	TrackSpeed           int
-	MaxIrValue           int
+	MaxIrFront           int
+	MaxIrSide            int
 	StrategyR1Time       int
 	StrategyS1Time       int
 	StrategyR2Time       int
@@ -23,16 +24,17 @@ type Config struct {
 // Default Config data
 func Default() Config {
 	return Config{
-		MaxSpeed:             1000000,
-		TrackTurnSpeed:       1000000,
-		SeekTurnSpeed:        1000000,
-		TrackSpeed:           1000000,
-		MaxIrValue:           40,
-		StrategyR1Time:       500000,
-		StrategyS1Time:       900000,
-		StrategyR2Time:       1000000,
-		StrategyS2Time:       900000,
-		StrategyStraightTime: 2000000,
+		MaxSpeed:             100,
+		TrackTurnSpeed:       100,
+		SeekTurnSpeed:        100,
+		TrackSpeed:           100,
+		MaxIrFront:           40,
+		MaxIrSide:            30,
+		StrategyR1Time:       500,
+		StrategyS1Time:       900,
+		StrategyR2Time:       1000,
+		StrategyS2Time:       900,
+		StrategyStraightTime: 1200,
 	}
 }
 
@@ -43,6 +45,7 @@ func FromString(data string) (Config, error) {
 	if err != nil {
 		return result, err
 	}
+	fixConfig(&result)
 	return result, nil
 }
 
@@ -53,4 +56,12 @@ func FromFile(fileName string) (Config, error) {
 		return Config{}, err
 	}
 	return FromString(string(b))
+}
+
+func fixConfig(c *Config) {
+	c.StrategyR1Time *= 1000
+	c.StrategyS1Time *= 1000
+	c.StrategyR2Time *= 1000
+	c.StrategyS2Time *= 1000
+	c.StrategyStraightTime *= 1000
 }
