@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-bots/ev3"
 	"go-bots/greyhound/config"
+	"go-bots/greyhound/data"
 	"log"
 	"os"
 	"os/signal"
@@ -53,6 +54,7 @@ func initializeTime() {
 
 func initialize() {
 	initializeTime()
+	data.Init(sensorReadNames)
 
 	buttons = ev3.OpenButtons(true)
 
@@ -134,6 +136,18 @@ var lastSpeedRight int
 
 const accelPerTicks int = 5
 const accelSpeedFactor int = 10000
+
+func stop() {
+	motorL1.Value = 0
+	motorL2.Value = 0
+	motorR1.Value = 0
+	motorR2.Value = 0
+
+	motorL1.Sync()
+	motorL2.Sync()
+	motorR1.Sync()
+	motorR2.Sync()
+}
 
 func move(left int, right int, now int) {
 	ticks := now - lastMoveTicks
@@ -239,6 +253,7 @@ func waitEnter() {
 }
 
 func waitOneSecond() int {
+	data.Reset()
 	initializeTime()
 	print("wait one second")
 	start := currentTicks()
@@ -284,6 +299,12 @@ func sign(value int) int {
 	} else {
 		return 0
 	}
+}
+func abs(value int) int {
+	if value < 0 {
+		return -value
+	}
+	return value
 }
 
 type sensorReadType int
@@ -434,7 +455,10 @@ func followLine(lastGivenTicks int) {
 	lastTicks := lastGivenTicks
 	lastPos := 0
 	lastNonZeroDirection := 0
-	lastPosD := 0
+	posI := 0
+	posE := 0
+	dt := 0
+	dMillis := 0
 
 	for {
 		now := currentTicks()
@@ -456,68 +480,110 @@ func followLine(lastGivenTicks int) {
 			maxSpeed = conf.MaxSpeed
 		}
 
-		maxSteering := (maxSpeed * conf.MaxSteeringPC) / 100
-
 		if out {
 			pos = conf.SensorRadius * 3 * lastNonZeroDirection
 			hint = sign(pos)
-			posD = lastPosD
+			posD = 0
 		} else if cross {
 			pos = lastPos
 			posD = 0
 		} else {
-			dTicks := now - lastTicks
-			if dTicks < 2000 {
-				dTicks = 2000
+			dt = now - lastTicks
+			if dt < 2000 {
+				dt = 2000
+				dMillis = 1
+			} else if dt > 100000 {
+				dt = 100000
+				dMillis = dt / 1000
+			} else {
+				dMillis = dt / 1000
 			}
-			if dTicks > 100000 {
-				dTicks = 100000
-			}
-			posD = ((pos - lastPos) * 50000) / dTicks
+
+			posD = ((pos - lastPos) * 100000) / dt
 			posD += hint
 			if posD > 100 {
 				posD = 100
 			} else if posD < -100 {
 				posD = -100
 			}
+
+			for i := 0; i < dMillis; i++ {
+				posI *= conf.KIrn
+				posI /= conf.KIrd
+				posE *= conf.KErn
+				posE /= conf.KErd
+			}
+			posI += pos
+			posE += abs(pos)
 		}
 
-		pos2 := sign(pos) * pos * pos
-		posD2 := sign(posD) * posD * posD
+		// Compute factors
+		factorP := (pos * conf.KPn * maxSpeed) / (conf.MaxPos * conf.KPd)
+		factorD := (posD * conf.KDn * maxSpeed) / (conf.MaxPosD * conf.KDd)
+		factorI := (pos * conf.KIn * maxSpeed) / conf.KId
+		factorE := (pos * conf.KEn * maxSpeed) / conf.KEd
 
-		factorP := (pos * conf.KP * maxSpeed) / (conf.MaxPos * 100)
-		factorP2 := (pos2 * conf.KP2 * maxSpeed) / (conf.MaxPos2 * 100)
-		factorD := (posD * conf.KD * maxSpeed) / (conf.MaxPosD * 100)
-		factorD2 := (posD2 * conf.KD2 * maxSpeed) / (conf.MaxPosD2 * 100)
+		// Limit slowness factor
+		if factorE > conf.MaxSlowPC {
+			factorE = conf.MaxSlowPC
+		}
 
-		steering := factorP + factorP2 + factorD + factorD2
+		// Compute steering
+		steering := factorP + factorD + factorI
+		if out {
+			steering = sign(lastNonZeroDirection) * (conf.OutSteeringPC * maxSpeed) / 100
+			factorE = 0
+		}
 
-		print(sensorReadNames[sr], "pos", pos, "d", posD, "f", factorP, factorP2, factorD, factorD2, "t", (now-lastTicks)/1000, "s", steering)
+		// Apply slowdown
+		actualMaxSpeed := (maxSpeed * (100 - factorE)) / 100
+		actualSteering := (steering * (100 - factorE)) / 100
+		maxSteering := (actualMaxSpeed * conf.MaxSteeringPC) / 100
 
+		// Store data
+		data.Store(uint32(now),
+			uint16(now-lastTicks),
+			int16(pos),
+			int16(posD),
+			int16(posI),
+			int16(posE),
+			int16(factorP),
+			int16(factorD),
+			int16(factorI),
+			int16(factorE),
+			uint8(sr),
+			uint8(actualMaxSpeed),
+			int8(actualSteering))
+
+		// Compute last values for next round
 		if pos > 0 {
 			lastNonZeroDirection = 1
 		} else if pos < 0 {
 			lastNonZeroDirection = -1
 		}
-		lastTicks, lastPos, lastPosD = now, pos, posD
+		lastTicks, lastPos = now, pos
 
-		if steering > 0 {
-			if steering > maxSteering {
-				steering = maxSteering
+		// Apply steering
+		if actualSteering > 0 {
+			if actualSteering > maxSteering {
+				actualSteering = maxSteering
 			}
-			move(maxSpeed, maxSpeed-steering, now)
-		} else if steering < 0 {
-			steering = -steering
-			if steering > maxSteering {
-				steering = maxSteering
+			move(actualMaxSpeed, actualMaxSpeed-actualSteering, now)
+		} else if actualSteering < 0 {
+			actualSteering = -actualSteering
+			if actualSteering > maxSteering {
+				actualSteering = maxSteering
 			}
-			move(maxSpeed-steering, maxSpeed, now)
+			move(actualMaxSpeed-actualSteering, actualMaxSpeed, now)
 		} else {
-			move(maxSpeed, maxSpeed, now)
+			move(actualMaxSpeed, actualMaxSpeed, now)
 		}
 
+		// Check stop command
 		if buttons.Enter {
 			print("stopping")
+			stop()
+			data.Print()
 			break
 		}
 	}

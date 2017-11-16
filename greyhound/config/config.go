@@ -9,21 +9,29 @@ import (
 // Config data
 type Config struct {
 	MaxSpeed      int
+	OutSteeringPC int
 	MaxSteeringPC int
+	MaxSlowPC     int
 	SensorRadius  int
 	SensorSpan    int
 	SensorMin     int
 	MinDTicks     int
 	MaxDTicks     int
 	MinOutMillis  int
-	KP            int
-	KP2           int
-	KD            int
-	KD2           int
+	KPn           int
+	KPd           int
+	KDn           int
+	KDd           int
+	KIn           int
+	KId           int
+	KIrn          int
+	KIrd          int
+	KEn           int
+	KEd           int
+	KErn          int
+	KErd          int
 	MaxPos        int
-	MaxPos2       int
 	MaxPosD       int
-	MaxPosD2      int
 	SlowStart1    int
 	SlowEnd1      int
 	SlowSpeed1    int
@@ -42,9 +50,7 @@ type Config struct {
 // CompleteConfig fills in computed configutation fields
 func CompleteConfig(c *Config) {
 	c.MaxPos = c.SensorRadius * 3
-	c.MaxPos2 = c.MaxPos * c.MaxPos
 	c.MaxPosD = c.MaxPos / c.MinOutMillis
-	c.MaxPosD2 = c.MaxPos * c.MaxPos
 
 	if c.SlowSpeed1 > 0 {
 		c.SlowStart1 *= 1000
@@ -94,17 +100,19 @@ func Default() Config {
 	result := Config{
 		// MaxSpeed:  100,
 		MaxSpeed:      30,
+		OutSteeringPC: 150,
 		MaxSteeringPC: 120,
+		MaxSlowPC:     60,
 		SensorRadius:  100,
 		SensorSpan:    700,
 		SensorMin:     80,
 		MinDTicks:     10,
 		MaxDTicks:     30000,
 		MinOutMillis:  10,
-		KP:            70,
-		KP2:           10,
-		KD:            0,
-		KD2:           0,
+		KPn:           40,
+		KPd:           100,
+		KDn:           20,
+		KDd:           100,
 	}
 	CompleteConfig(&result)
 	return result
