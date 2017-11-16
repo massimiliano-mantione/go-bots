@@ -152,6 +152,18 @@ func stop() {
 func move(left int, right int, now int) {
 	ticks := now - lastMoveTicks
 	lastMoveTicks = now
+
+	if left > 100 {
+		left = 100
+	} else if left < -100 {
+		left = -100
+	}
+	if right > 100 {
+		right = 100
+	} else if right < -100 {
+		right = -100
+	}
+
 	right *= accelSpeedFactor
 	left *= accelSpeedFactor
 
@@ -481,7 +493,7 @@ func followLine(lastGivenTicks int) {
 		}
 
 		if out {
-			pos = conf.SensorRadius * 3 * lastNonZeroDirection
+			pos = conf.SensorRadius * 6 * lastNonZeroDirection
 			hint = sign(pos)
 			posD = 0
 		} else if cross {
@@ -501,27 +513,41 @@ func followLine(lastGivenTicks int) {
 
 			posD = ((pos - lastPos) * 100000) / dt
 			posD += hint
-			if posD > 100 {
-				posD = 100
-			} else if posD < -100 {
-				posD = -100
+			if posD > 2000 {
+				posD = 2000
+			} else if posD < -2000 {
+				posD = -2000
 			}
+		}
 
-			for i := 0; i < dMillis; i++ {
-				posI *= conf.KIrn
-				posI /= conf.KIrd
-				posE *= conf.KErn
-				posE /= conf.KErd
-			}
-			posI += pos
+		// Apply I and E attenuation
+		for i := 0; i < dMillis; i++ {
+			posI *= conf.KIrn
+			posI /= conf.KIrd
+			posE *= conf.KErn
+			posE /= conf.KErd
+		}
+
+		// Compute I
+		posI += pos
+
+		// Compute E
+		absPos := abs(pos)
+		if absPos > conf.KELimitP {
 			posE += abs(pos)
 		}
 
 		// Compute factors
 		factorP := (pos * conf.KPn * maxSpeed) / (conf.MaxPos * conf.KPd)
 		factorD := (posD * conf.KDn * maxSpeed) / (conf.MaxPosD * conf.KDd)
-		factorI := (pos * conf.KIn * maxSpeed) / conf.KId
-		factorE := (pos * conf.KEn * maxSpeed) / conf.KEd
+		factorI := (posI * conf.KIn * maxSpeed) / conf.KId
+
+		var factorE int
+		if posE <= conf.KELimit {
+			factorE = 0
+		} else {
+			factorE = ((posE - conf.KELimit) * conf.KEn) / conf.KEd
+		}
 
 		// Limit slowness factor
 		if factorE > conf.MaxSlowPC {

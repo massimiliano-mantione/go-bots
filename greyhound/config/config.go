@@ -26,6 +26,8 @@ type Config struct {
 	KId           int
 	KIrn          int
 	KIrd          int
+	KELimitP      int
+	KELimit       int
 	KEn           int
 	KEd           int
 	KErn          int
