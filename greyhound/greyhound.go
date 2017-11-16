@@ -433,6 +433,7 @@ func followLine(lastGivenTicks int) {
 
 	lastTicks := lastGivenTicks
 	lastPos := 0
+	lastNonZeroDirection := 0
 	lastPosD := 0
 
 	for {
@@ -458,7 +459,7 @@ func followLine(lastGivenTicks int) {
 		maxSteering := (maxSpeed * conf.MaxSteeringPC) / 100
 
 		if out {
-			pos = conf.SensorRadius * 3 * sign(lastPos)
+			pos = conf.SensorRadius * 3 * lastNonZeroDirection
 			hint = sign(pos)
 			posD = lastPosD
 		} else if cross {
@@ -466,14 +467,19 @@ func followLine(lastGivenTicks int) {
 			posD = 0
 		} else {
 			dTicks := now - lastTicks
-			if dTicks < 5 {
-				dTicks = 5
+			if dTicks < 2000 {
+				dTicks = 2000
 			}
 			if dTicks > 100000 {
 				dTicks = 100000
 			}
-			posD = ((pos - lastPos) * 100000) / dTicks
+			posD = ((pos - lastPos) * 50000) / dTicks
 			posD += hint
+			if posD > 100 {
+				posD = 100
+			} else if posD < -100 {
+				posD = -100
+			}
 		}
 
 		pos2 := sign(pos) * pos * pos
@@ -484,10 +490,15 @@ func followLine(lastGivenTicks int) {
 		factorD := (posD * conf.KD * maxSpeed) / (conf.MaxPosD * 100)
 		factorD2 := (posD2 * conf.KD2 * maxSpeed) / (conf.MaxPosD2 * 100)
 
-		steering := factorP + factorP2 - factorD - factorD2
+		steering := factorP + factorP2 + factorD + factorD2
 
 		print(sensorReadNames[sr], "pos", pos, "d", posD, "f", factorP, factorP2, factorD, factorD2, "t", (now-lastTicks)/1000, "s", steering)
 
+		if pos > 0 {
+			lastNonZeroDirection = 1
+		} else if pos < 0 {
+			lastNonZeroDirection = -1
+		}
 		lastTicks, lastPos, lastPosD = now, pos, posD
 
 		if steering > 0 {
