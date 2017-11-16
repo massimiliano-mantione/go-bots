@@ -311,7 +311,12 @@ func loadConfig() {
 
 var strategyDirection = 0
 
-func chooseStrategy(channelNumber int) bool {
+var channelNumber int
+
+func chooseStrategy() bool {
+	if channelNumber == 0 {
+		channelNumber = 2
+	}
 	ev3.WriteStringAttribute(devs.OutB, ev3.Position, "0")
 	setIrRemoteMode(channelNumber)
 	for {
@@ -338,6 +343,24 @@ func chooseStrategy(channelNumber int) bool {
 		} else if remoteValue == 1 {
 			beep.C()
 			return false
+		}
+
+		if buttons.Up {
+			channelNumber = 1
+			setIrRemoteMode(channelNumber)
+			beep.C()
+		} else if buttons.Right {
+			channelNumber = 2
+			setIrRemoteMode(channelNumber)
+			beep.CC()
+		} else if buttons.Down {
+			channelNumber = 3
+			setIrRemoteMode(channelNumber)
+			beep.CCC()
+		} else if buttons.Left {
+			channelNumber = 4
+			setIrRemoteMode(channelNumber)
+			beep.CCCC()
 		}
 	}
 }
@@ -479,7 +502,7 @@ func main() {
 	// conf = config.Default()
 
 	for {
-		if chooseStrategy(2) {
+		if chooseStrategy() {
 			return
 		}
 		waitBegin()
