@@ -212,14 +212,19 @@ func move(left int, right int) {
 	moveFull(left, right, 1, true)
 }
 
+var useFront = true
+
 func moveFull(left int, right int, useBack int, lowerFront bool) {
 
 	motorL.Value = -left
 	motorR.Value = -right
 
-	if lowerFront {
+	if useFront && lowerFront {
 		if pmotorFU.Value > -110 {
 			motorFU.Value = -40
+			if useBack != 1 {
+				motorFU.Value = -100
+			}
 		} else {
 			motorFU.Value = 0
 		}
@@ -361,6 +366,12 @@ func chooseStrategy() bool {
 			channelNumber = 4
 			setIrRemoteMode(channelNumber)
 			beep.CCCC()
+		} else if buttons.Enter {
+			useFront = true
+			beep.CG()
+		} else if buttons.Back {
+			useFront = false
+			beep.GC()
 		}
 	}
 }
