@@ -178,10 +178,7 @@ func move(left int, right int, now int) {
 			nextSpeedLeft = left
 		}
 	} else if left < nextSpeedLeft {
-		nextSpeedLeft -= delta
-		if nextSpeedLeft < left {
-			nextSpeedLeft = left
-		}
+		nextSpeedLeft = left
 	}
 	if right > nextSpeedRight {
 		nextSpeedRight += delta
@@ -189,10 +186,7 @@ func move(left int, right int, now int) {
 			nextSpeedRight = right
 		}
 	} else if right < nextSpeedRight {
-		nextSpeedRight -= delta
-		if nextSpeedRight < right {
-			nextSpeedRight = right
-		}
+		nextSpeedRight = right
 	}
 	lastSpeedLeft = nextSpeedLeft
 	lastSpeedRight = nextSpeedRight
@@ -461,6 +455,19 @@ func moveOneSecond() {
 	}
 }
 
+func turnOneSecond() {
+	print("turn one second")
+	start := currentTicks()
+	for {
+		now := currentTicks()
+		elapsed := now - start
+		move(conf.MaxSpeed, -conf.MaxSpeed, now)
+		if elapsed >= 1000000 {
+			break
+		}
+	}
+}
+
 func followLine(lastGivenTicks int) {
 	print("following line")
 
@@ -633,4 +640,8 @@ func main() {
 	waitEnter()
 	lastGivenTicks := waitOneSecond()
 	followLine(lastGivenTicks)
+
+	// waitOneSecond()
+	// moveOneSecond()
+	// turnOneSecond()
 }
