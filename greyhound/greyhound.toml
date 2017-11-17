@@ -1,6 +1,6 @@
-MaxSpeed=         30
+MaxSpeed=         50
 
-OutSteeringPC=    150
+OutSteeringPC=    300
 MaxSteeringPC=    120
 MaxSlowPC=        60
 
@@ -10,21 +10,25 @@ SensorMin=        80
 MinDTicks=        10
 MaxDTicks=        30000
 MinOutMillis=     10
+DAvgMillis=       42
+SpeedEstRn=       80
+SpeedEstRd=       100
 
-KPn=              20
-KPd=              1
-KDn=              5
-KDd=              1
+
+KPn=              1
+KPd=              4
+KDn=              1
+KDd=              20
 KIn=              0
 KId=              1
-KIrn=             0
-KIrd=             1
-KELimitP=         280
-KELimit=          2000
+KIrn=             90
+KIrd=             100
+KEReduction=      180
+KELimit=          1
 KEn=              0
-KEd=              1
-KErn=             0
-KErd=             1
+KEd=              2
+KErn=             90
+KErd=             100
 
 SlowStart1=       0
 SlowEnd1=         0

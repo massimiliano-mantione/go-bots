@@ -478,11 +478,16 @@ func followLine(lastGivenTicks int) {
 	posE := 0
 	dt := 0
 	dMillis := 0
+	powerLeft := 0
+	powerRight := 0
+	estimatedSpeedLeft := 0
+	estimatedSpeedRight := 0
 
 	for {
 		now := currentTicks()
 		sr, pos, hint, cross, out := processSensorData()
 		posD := 0
+		posDAverage := 0
 
 		var maxSpeed int
 		if conf.SlowSpeed1 > 0 && now < conf.SlowStart1 && now > conf.SlowEnd1 {
@@ -508,17 +513,19 @@ func followLine(lastGivenTicks int) {
 			posD = 0
 		} else {
 			dt = now - lastTicks
-			if dt < 2000 {
-				dt = 2000
+			// cdt is a "trimmed" dt
+			cdt := dt
+			if cdt < 2000 {
+				cdt = 2000
 				dMillis = 1
-			} else if dt > 100000 {
-				dt = 100000
-				dMillis = dt / 1000
+			} else if cdt > 100000 {
+				cdt = 100000
+				dMillis = cdt / 1000
 			} else {
-				dMillis = dt / 1000
+				dMillis = cdt / 1000
 			}
 
-			posD = ((pos - lastPos) * 100000) / dt
+			posD = ((pos - lastPos) * 100000) / cdt
 			posD += hint
 			if posD > 2000 {
 				posD = 2000
@@ -527,26 +534,41 @@ func followLine(lastGivenTicks int) {
 			}
 		}
 
-		// Apply I and E attenuation
+		// Update posD average
+		posDAverageLost := (posDAverage * (dMillis)) / conf.DAvgMillis
+		posDAverageGained := (posD * (dMillis)) / conf.DAvgMillis
+		posDAverage = posDAverage + posDAverageGained - posDAverageLost
+
+		// Apply attenuations and updates
+		pos2e := pos * pos / conf.KEReduction
 		for i := 0; i < dMillis; i++ {
+			// I
 			posI *= conf.KIrn
 			posI /= conf.KIrd
+			posI += pos
+
+			// E
 			posE *= conf.KErn
 			posE /= conf.KErd
+			posE += pos2e
+			if posE > 30000 {
+				posE = 30000
+			}
+
+			// Estimate speed
+			estimatedSpeedLeft *= conf.SpeedEstRn
+			estimatedSpeedLeft /= conf.SpeedEstRd
+			estimatedSpeedLeft += powerLeft
+			estimatedSpeedRight *= conf.SpeedEstRn
+			estimatedSpeedRight /= conf.SpeedEstRd
+			estimatedSpeedRight += powerRight
 		}
 
-		// Compute I
-		posI += pos
-
-		// Compute E
-		absPos := abs(pos)
-		if absPos > conf.KELimitP {
-			posE += abs(pos)
-		}
+		print(dMillis, "power", powerLeft, powerRight, "speed", estimatedSpeedLeft, estimatedSpeedRight)
 
 		// Compute factors
 		factorP := (pos * conf.KPn * maxSpeed) / (conf.MaxPos * conf.KPd)
-		factorD := (posD * conf.KDn * maxSpeed) / (conf.MaxPosD * conf.KDd)
+		factorD := (posDAverage * conf.KDn * maxSpeed) / (conf.MaxPosD * conf.KDd)
 		factorI := (posI * conf.KIn * maxSpeed) / conf.KId
 
 		var factorE int
@@ -573,9 +595,39 @@ func followLine(lastGivenTicks int) {
 		actualSteering := (steering * (100 - factorE)) / 100
 		maxSteering := (actualMaxSpeed * conf.MaxSteeringPC) / 100
 
+		// Compute last values for next round
+		if pos > 0 {
+			lastNonZeroDirection = 1
+		} else if pos < 0 {
+			lastNonZeroDirection = -1
+		}
+		lastTicks, lastPos = now, pos
+
+		// Compute motor powers
+		if actualSteering > 0 {
+			if actualSteering > maxSteering {
+				actualSteering = maxSteering
+			}
+			powerLeft = actualMaxSpeed
+			powerRight = actualMaxSpeed - actualSteering
+		} else if actualSteering < 0 {
+			actualSteering = -actualSteering
+			if actualSteering > maxSteering {
+				actualSteering = maxSteering
+			}
+			powerLeft = actualMaxSpeed - actualSteering
+			powerRight = actualMaxSpeed
+		} else {
+			powerLeft = actualMaxSpeed
+			powerRight = actualMaxSpeed
+		}
+
+		// Apply power
+		move(powerLeft, powerRight, now)
+
 		// Store data
 		data.Store(uint32(now),
-			uint16(now-lastTicks),
+			uint16(dt),
 			int16(pos),
 			int16(posD),
 			int16(posI),
@@ -586,31 +638,9 @@ func followLine(lastGivenTicks int) {
 			int16(factorE),
 			uint8(sr),
 			uint8(actualMaxSpeed),
-			int8(actualSteering))
-
-		// Compute last values for next round
-		if pos > 0 {
-			lastNonZeroDirection = 1
-		} else if pos < 0 {
-			lastNonZeroDirection = -1
-		}
-		lastTicks, lastPos = now, pos
-
-		// Apply steering
-		if actualSteering > 0 {
-			if actualSteering > maxSteering {
-				actualSteering = maxSteering
-			}
-			move(actualMaxSpeed, actualMaxSpeed-actualSteering, now)
-		} else if actualSteering < 0 {
-			actualSteering = -actualSteering
-			if actualSteering > maxSteering {
-				actualSteering = maxSteering
-			}
-			move(actualMaxSpeed-actualSteering, actualMaxSpeed, now)
-		} else {
-			move(actualMaxSpeed, actualMaxSpeed, now)
-		}
+			int8(actualSteering),
+			int8(powerLeft),
+			int8(powerRight))
 
 		// Check stop command
 		if buttons.Enter {

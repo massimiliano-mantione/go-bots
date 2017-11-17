@@ -18,6 +18,9 @@ type Config struct {
 	MinDTicks     int
 	MaxDTicks     int
 	MinOutMillis  int
+	DAvgMillis    int
+	SpeedEstRn    int
+	SpeedEstRd    int
 	KPn           int
 	KPd           int
 	KDn           int
@@ -26,7 +29,7 @@ type Config struct {
 	KId           int
 	KIrn          int
 	KIrd          int
-	KELimitP      int
+	KEReduction   int
 	KELimit       int
 	KEn           int
 	KEd           int
@@ -111,6 +114,7 @@ func Default() Config {
 		MinDTicks:     10,
 		MaxDTicks:     30000,
 		MinOutMillis:  10,
+		DAvgMillis:    42,
 		KPn:           40,
 		KPd:           100,
 		KDn:           20,
