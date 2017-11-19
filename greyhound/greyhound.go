@@ -462,7 +462,7 @@ func turnOneSecond() {
 		now := currentTicks()
 		elapsed := now - start
 		move(conf.MaxSpeed, -conf.MaxSpeed, now)
-		if elapsed >= 1000000 {
+		if elapsed >= 50000 {
 			break
 		}
 	}
@@ -482,6 +482,10 @@ func followLine(lastGivenTicks int) {
 	powerRight := 0
 	estimatedSpeedLeft := 0
 	estimatedSpeedRight := 0
+
+	computedOutParameters := false
+	outOuterPowerDelta := 0
+	outInnerPowerDelta := 0
 
 	for {
 		now := currentTicks()
@@ -564,7 +568,7 @@ func followLine(lastGivenTicks int) {
 			estimatedSpeedRight += powerRight
 		}
 
-		print(dMillis, "power", powerLeft, powerRight, "speed", estimatedSpeedLeft, estimatedSpeedRight)
+		// print(dMillis, "power", powerLeft, powerRight, "speed", estimatedSpeedLeft, estimatedSpeedRight)
 
 		// Compute factors
 		factorP := (pos * conf.KPn * maxSpeed) / (conf.MaxPos * conf.KPd)
@@ -586,14 +590,63 @@ func followLine(lastGivenTicks int) {
 		// Compute steering
 		steering := factorP + factorD + factorI
 		if out {
-			steering = sign(lastNonZeroDirection) * (conf.OutSteeringPC * maxSpeed) / 100
-			factorE = 0
+			innerPowerTarget := maxSpeed - ((conf.OutSteeringPC * maxSpeed) / 100)
+			if !computedOutParameters {
+				computedOutParameters = true
+
+				estimatedSpeed := (estimatedSpeedLeft + estimatedSpeedRight) / 2
+				estimatedSpeed /= 5
+
+				outOuterPowerDelta = (estimatedSpeed * (100 - maxSpeed)) / maxSpeed
+				outInnerPowerDelta = (estimatedSpeed * (innerPowerTarget + 100)) / maxSpeed
+			} else {
+				for i := 0; i < dMillis; i++ {
+					outOuterPowerDelta *= conf.OutSteeringRn
+					outOuterPowerDelta /= conf.OutSteeringRd
+					outInnerPowerDelta *= conf.OutSteeringRn
+					outInnerPowerDelta /= conf.OutSteeringRd
+				}
+			}
+			outOuterPower := maxSpeed + outOuterPowerDelta
+			outInnerPower := innerPowerTarget - outInnerPowerDelta
+
+			if lastNonZeroDirection > 0 {
+				powerLeft = outOuterPower
+				powerRight = outInnerPower
+			} else {
+				powerLeft = outInnerPower
+				powerRight = outOuterPower
+			}
+		} else {
+			computedOutParameters = false
+
+			// Apply slowdown
+			actualMaxSpeed := (maxSpeed * (100 - factorE)) / 100
+			actualSteering := (steering * (100 - factorE)) / 100
+			maxSteering := (actualMaxSpeed * conf.MaxSteeringPC) / 100
+
+			// Compute motor powers
+			if actualSteering > 0 {
+				if actualSteering > maxSteering {
+					actualSteering = maxSteering
+				}
+				powerLeft = actualMaxSpeed
+				powerRight = actualMaxSpeed - actualSteering
+			} else if actualSteering < 0 {
+				actualSteering = -actualSteering
+				if actualSteering > maxSteering {
+					actualSteering = maxSteering
+				}
+				powerLeft = actualMaxSpeed - actualSteering
+				powerRight = actualMaxSpeed
+			} else {
+				powerLeft = actualMaxSpeed
+				powerRight = actualMaxSpeed
+			}
 		}
 
-		// Apply slowdown
-		actualMaxSpeed := (maxSpeed * (100 - factorE)) / 100
-		actualSteering := (steering * (100 - factorE)) / 100
-		maxSteering := (actualMaxSpeed * conf.MaxSteeringPC) / 100
+		// Apply power
+		move(powerLeft, powerRight, now)
 
 		// Compute last values for next round
 		if pos > 0 {
@@ -602,28 +655,6 @@ func followLine(lastGivenTicks int) {
 			lastNonZeroDirection = -1
 		}
 		lastTicks, lastPos = now, pos
-
-		// Compute motor powers
-		if actualSteering > 0 {
-			if actualSteering > maxSteering {
-				actualSteering = maxSteering
-			}
-			powerLeft = actualMaxSpeed
-			powerRight = actualMaxSpeed - actualSteering
-		} else if actualSteering < 0 {
-			actualSteering = -actualSteering
-			if actualSteering > maxSteering {
-				actualSteering = maxSteering
-			}
-			powerLeft = actualMaxSpeed - actualSteering
-			powerRight = actualMaxSpeed
-		} else {
-			powerLeft = actualMaxSpeed
-			powerRight = actualMaxSpeed
-		}
-
-		// Apply power
-		move(powerLeft, powerRight, now)
 
 		// Store data
 		data.Store(uint32(now),
@@ -637,8 +668,10 @@ func followLine(lastGivenTicks int) {
 			int16(factorI),
 			int16(factorE),
 			uint8(sr),
-			uint8(actualMaxSpeed),
-			int8(actualSteering),
+			0,
+			0,
+			// uint8(actualMaxSpeed),
+			// int8(actualSteering),
 			int8(powerLeft),
 			int8(powerRight))
 

@@ -1,6 +1,9 @@
 MaxSpeed=         50
 
-OutSteeringPC=    300
+OutSteeringRn=    99
+OutSteeringRd=    100
+OutSteeringPC=    100
+
 MaxSteeringPC=    120
 MaxSlowPC=        60
 

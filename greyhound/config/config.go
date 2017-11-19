@@ -8,8 +8,12 @@ import (
 
 // Config data
 type Config struct {
-	MaxSpeed      int
+	MaxSpeed int
+
+	OutSteeringRn int
+	OutSteeringRd int
 	OutSteeringPC int
+
 	MaxSteeringPC int
 	MaxSlowPC     int
 	SensorRadius  int
