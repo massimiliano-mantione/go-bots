@@ -682,14 +682,14 @@ func followLine(lastGivenTicks int) {
 			if !computedOutParameters {
 				computedOutParameters = true
 
-				estimatedSpeed := (estimatedSpeedLeft + estimatedSpeedRight) / 2
-				estimatedSpeed *= conf.OutInitMaxRn
-				estimatedSpeed /= conf.OutInitMaxRd
+				estimatedDirection := sign(estimatedSpeedRight - estimatedSpeedLeft)
 
-				maxOuterPowerDelta := conf.OutPowerMax - conf.OutPowerMin
-				maxInnerPowerDelta := -conf.OutPowerMax
-				initialOuterPowerDelta := maxOuterPowerDelta * estimatedSpeed / conf.MaxSpeed
-				initialInnerPowerDelta := maxInnerPowerDelta * estimatedSpeed / conf.MaxSpeed
+				initialOuterPowerDelta := 0
+				initialInnerPowerDelta := 0
+				if sign(estimatedDirection*lastNonZeroDirection) > 0 {
+					initialOuterPowerDelta = conf.OutPowerMax - conf.OutPowerMin
+					initialInnerPowerDelta = -conf.OutPowerMax
+				}
 
 				if lastNonZeroDirection > 0 {
 					outLeftPowerTarget = conf.OutPowerMin
@@ -703,7 +703,7 @@ func followLine(lastGivenTicks int) {
 					outRightPowerDelta = initialOuterPowerDelta
 				}
 
-				print("OUT INIT", estimatedSpeed, maxOuterPowerDelta, maxInnerPowerDelta, initialOuterPowerDelta, initialInnerPowerDelta)
+				print("OUT INIT", estimatedDirection, lastNonZeroDirection, outLeftPowerDelta, outRightPowerDelta)
 
 			} else {
 				for i := 0; i < dMillis; i++ {
@@ -714,18 +714,8 @@ func followLine(lastGivenTicks int) {
 				}
 			}
 
-			// powerLeft = outLeftPowerTarget + outLeftPowerDelta
-			// powerRight = outRightPowerTarget + outRightPowerDelta
-
-			outLeftPowerTarget = 0
-			outRightPowerTarget = 0
-			if lastNonZeroDirection > 0 {
-				powerLeft = conf.OutPowerMin + outLeftPowerTarget
-				powerRight = -conf.OutPowerMin + outRightPowerTarget
-			} else {
-				powerLeft = -conf.OutPowerMin + outLeftPowerTarget
-				powerRight = conf.OutPowerMin + outRightPowerTarget
-			}
+			powerLeft = outLeftPowerTarget + outLeftPowerDelta
+			powerRight = outRightPowerTarget + outRightPowerDelta
 		} else {
 			computedOutParameters = false
 
