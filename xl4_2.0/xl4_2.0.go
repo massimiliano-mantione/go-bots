@@ -384,7 +384,7 @@ func waitBegin() {
 		now := currentTicks()
 		elapsed := now - start
 		move(0, 0, now)
-		if elapsed >= 4800000 {
+		if elapsed >= 4500000 {
 			return
 		}
 	}
