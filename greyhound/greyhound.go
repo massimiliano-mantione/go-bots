@@ -27,6 +27,8 @@ var motorL1, motorL2, motorR1, motorR2 *ev3.Attribute
 var cF, cL, cR, cB *ev3.Attribute
 var buttons *ev3.Buttons
 
+var ledRR, ledRG, ledLR, ledLG *ev3.Attribute
+
 var conf config.Config
 
 func closeSensors() {
@@ -64,6 +66,19 @@ func initialize() {
 		OutC: ev3.OutPortModeDcMotor,
 		OutD: ev3.OutPortModeDcMotor,
 	})
+
+	ledLG = ev3.OpenTextW(devs.LedLeftGreen, ev3.Brightness)
+	ledLR = ev3.OpenTextW(devs.LedLeftRed, ev3.Brightness)
+	ledRG = ev3.OpenTextW(devs.LedRightGreen, ev3.Brightness)
+	ledRR = ev3.OpenTextW(devs.LedRightRed, ev3.Brightness)
+	ledLG.Value = 0
+	ledLR.Value = 0
+	ledRG.Value = 0
+	ledRR.Value = 0
+	ledLG.Sync()
+	ledLR.Sync()
+	ledRG.Sync()
+	ledRR.Sync()
 
 	// Check motors
 	ev3.CheckDriver(devs.OutA, ev3.DriverRcxMotor, ev3.OutA)
@@ -126,8 +141,29 @@ func close() {
 	motorR1.Close()
 	motorR2.Close()
 
+	// Set leds off
+	ledLG.Value = 0
+	ledLR.Value = 0
+	ledRG.Value = 0
+	ledRR.Value = 0
+	ledLG.Sync()
+	ledLR.Sync()
+	ledRG.Sync()
+	ledRR.Sync()
+
 	// Close sensor values
 	closeSensors()
+}
+
+func leds(rl int, rr int, gr int, gl int) {
+	ledLG.Value = gl
+	ledLR.Value = rl
+	ledRG.Value = gr
+	ledRR.Value = rr
+	ledLG.Sync()
+	ledLR.Sync()
+	ledRG.Sync()
+	ledRR.Sync()
 }
 
 var lastMoveTicks int
@@ -396,19 +432,19 @@ func processSensorData() (sensorRead sensorReadType, pos int, hint int, cross bo
 		out = true
 		pos, hint, cross = 0, 0, false
 	case sensorReadR:
-		pos = conf.SensorRadius*2 + distanceFromSensor(r)
+		pos = conf.SensorHole + conf.SensorRadius*2 + distanceFromSensor(r)
 		hint = 0
 		cross, out = false, false
 	case sensorReadRB:
-		pos = conf.SensorRadius + positionBetweenSensors(b, r)
+		pos = conf.SensorHole + conf.SensorRadius + positionBetweenSensors(b, r)
 		hint = 1
 		cross, out = false, false
 	case sensorReadL:
-		pos = -conf.SensorRadius*2 - distanceFromSensor(l)
+		pos = -conf.SensorHole - conf.SensorRadius*2 - distanceFromSensor(l)
 		hint = 0
 		cross, out = false, false
 	case sensorReadLB:
-		pos = -conf.SensorRadius + positionBetweenSensors(l, b)
+		pos = -conf.SensorHole - conf.SensorRadius + positionBetweenSensors(l, b)
 		hint = 1
 		cross, out = false, false
 	case sensorReadLR, sensorReadLRB, sensorReadFLRB, sensorReadFLR:
@@ -420,26 +456,73 @@ func processSensorData() (sensorRead sensorReadType, pos int, hint int, cross bo
 		hint = 0
 		cross, out = false, false
 	case sensorReadFR:
-		pos = conf.SensorRadius + positionBetweenSensors(f, r)
+		pos = conf.SensorHole + conf.SensorRadius + positionBetweenSensors(f, r)
 		hint = -1
 		cross, out = false, false
 	case sensorReadFRB:
-		pos = conf.SensorRadius + positionBetweenSensors((f+b)/2, r)
+		pos = conf.SensorHole + conf.SensorRadius + positionBetweenSensors((f+b)/2, r)
 		hint = 0
 		cross, out = false, false
 	case sensorReadFL:
-		pos = -conf.SensorRadius + positionBetweenSensors(l, f)
+		pos = -conf.SensorHole - conf.SensorRadius + positionBetweenSensors(l, f)
 		hint = 1
 		cross, out = false, false
 	case sensorReadFLB:
-		pos = -conf.SensorRadius + positionBetweenSensors(l, (f+b)/2)
+		pos = -conf.SensorHole - conf.SensorRadius + positionBetweenSensors(l, (f+b)/2)
 		hint = 0
 		cross, out = false, false
 	default:
 		print("Error: reading", sensorRead)
 	}
 
+	if out {
+		if pos < 0 {
+			leds(255, 0, 0, 0)
+		} else if pos > 0 {
+			leds(0, 255, 0, 0)
+		} else {
+			leds(255, 255, 0, 0)
+		}
+	} else {
+		if pos < 0 {
+			leds(0, 0, 255, (-pos*254)/conf.MaxPos)
+		} else if pos > 0 {
+			leds(0, 0, (pos*254)/conf.MaxPos, 255)
+		} else {
+			leds(0, 0, 255, 255)
+		}
+	}
+
 	return
+}
+
+func moveUntilOut() {
+	print("move until out")
+	leds(0, 0, 255, 255)
+	for {
+		now := currentTicks()
+		cF.Sync()
+		v := trimSensor(cF)
+		if isOnTrack(v) {
+			move(30, 30, now)
+		} else {
+			leds(0, 0, 255, 255)
+			return
+		}
+	}
+}
+func turn50ms() {
+	print("turn 50ms")
+	start := currentTicks()
+	for {
+		now := currentTicks()
+		elapsed := now - start
+		move(-30, 30, now)
+		if elapsed >= 50000 {
+			stop()
+			break
+		}
+	}
 }
 
 func moveOneSecond() {
@@ -484,8 +567,10 @@ func followLine(lastGivenTicks int) {
 	estimatedSpeedRight := 0
 
 	computedOutParameters := false
-	outOuterPowerDelta := 0
-	outInnerPowerDelta := 0
+	outLeftPowerTarget := 0
+	outLeftPowerDelta := 0
+	outRightPowerTarget := 0
+	outRightPowerDelta := 0
 
 	for {
 		now := currentTicks()
@@ -529,12 +614,16 @@ func followLine(lastGivenTicks int) {
 				dMillis = cdt / 1000
 			}
 
-			posD = ((pos - lastPos) * 100000) / cdt
-			posD += hint
-			if posD > 2000 {
-				posD = 2000
-			} else if posD < -2000 {
-				posD = -2000
+			if computedOutParameters {
+				posD = 0
+			} else {
+				posD = ((pos - lastPos) * 100000) / cdt
+				posD += hint
+				if posD > 2000 {
+					posD = 2000
+				} else if posD < -2000 {
+					posD = -2000
+				}
 			}
 		}
 
@@ -590,32 +679,52 @@ func followLine(lastGivenTicks int) {
 		// Compute steering
 		steering := factorP + factorD + factorI
 		if out {
-			innerPowerTarget := maxSpeed - ((conf.OutSteeringPC * maxSpeed) / 100)
 			if !computedOutParameters {
 				computedOutParameters = true
 
 				estimatedSpeed := (estimatedSpeedLeft + estimatedSpeedRight) / 2
-				estimatedSpeed /= 5
+				estimatedSpeed *= conf.OutInitMaxRn
+				estimatedSpeed /= conf.OutInitMaxRd
 
-				outOuterPowerDelta = (estimatedSpeed * (100 - maxSpeed)) / maxSpeed
-				outInnerPowerDelta = (estimatedSpeed * (innerPowerTarget + 100)) / maxSpeed
+				maxOuterPowerDelta := conf.OutPowerMax - conf.OutPowerMin
+				maxInnerPowerDelta := -conf.OutPowerMax
+				initialOuterPowerDelta := maxOuterPowerDelta * estimatedSpeed / conf.MaxSpeed
+				initialInnerPowerDelta := maxInnerPowerDelta * estimatedSpeed / conf.MaxSpeed
+
+				if lastNonZeroDirection > 0 {
+					outLeftPowerTarget = conf.OutPowerMin
+					outRightPowerTarget = 0
+					outLeftPowerDelta = initialOuterPowerDelta
+					outRightPowerDelta = initialInnerPowerDelta
+				} else {
+					outLeftPowerTarget = 0
+					outRightPowerTarget = conf.OutPowerMin
+					outLeftPowerDelta = initialInnerPowerDelta
+					outRightPowerDelta = initialOuterPowerDelta
+				}
+
+				print("OUT INIT", estimatedSpeed, maxOuterPowerDelta, maxInnerPowerDelta, initialOuterPowerDelta, initialInnerPowerDelta)
+
 			} else {
 				for i := 0; i < dMillis; i++ {
-					outOuterPowerDelta *= conf.OutSteeringRn
-					outOuterPowerDelta /= conf.OutSteeringRd
-					outInnerPowerDelta *= conf.OutSteeringRn
-					outInnerPowerDelta /= conf.OutSteeringRd
+					outLeftPowerDelta *= conf.OutPowerRn
+					outLeftPowerDelta /= conf.OutPowerRd
+					outRightPowerDelta *= conf.OutPowerRn
+					outRightPowerDelta /= conf.OutPowerRd
 				}
 			}
-			outOuterPower := maxSpeed + outOuterPowerDelta
-			outInnerPower := innerPowerTarget - outInnerPowerDelta
 
+			// powerLeft = outLeftPowerTarget + outLeftPowerDelta
+			// powerRight = outRightPowerTarget + outRightPowerDelta
+
+			outLeftPowerTarget = 0
+			outRightPowerTarget = 0
 			if lastNonZeroDirection > 0 {
-				powerLeft = outOuterPower
-				powerRight = outInnerPower
+				powerLeft = conf.OutPowerMin + outLeftPowerTarget
+				powerRight = -conf.OutPowerMin + outRightPowerTarget
 			} else {
-				powerLeft = outInnerPower
-				powerRight = outOuterPower
+				powerLeft = -conf.OutPowerMin + outLeftPowerTarget
+				powerRight = conf.OutPowerMin + outRightPowerTarget
 			}
 		} else {
 			computedOutParameters = false
@@ -668,10 +777,8 @@ func followLine(lastGivenTicks int) {
 			int16(factorI),
 			int16(factorE),
 			uint8(sr),
-			0,
-			0,
-			// uint8(actualMaxSpeed),
-			// int8(actualSteering),
+			int16(estimatedSpeedLeft),
+			int16(estimatedSpeedRight),
 			int8(powerLeft),
 			int8(powerRight))
 
@@ -703,6 +810,13 @@ func main() {
 	waitEnter()
 	lastGivenTicks := waitOneSecond()
 	followLine(lastGivenTicks)
+
+	// waitOneSecond()
+	// moveUntilOut()
+	// turn50ms()
+	// waitOneSecond()
+	// waitOneSecond()
+	// waitOneSecond()
 
 	// waitOneSecond()
 	// moveOneSecond()

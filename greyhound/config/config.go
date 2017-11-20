@@ -10,12 +10,16 @@ import (
 type Config struct {
 	MaxSpeed int
 
-	OutSteeringRn int
-	OutSteeringRd int
-	OutSteeringPC int
+	OutInitMaxRn int
+	OutInitMaxRd int
+	OutPowerMax  int
+	OutPowerMin  int
+	OutPowerRn   int
+	OutPowerRd   int
 
 	MaxSteeringPC int
 	MaxSlowPC     int
+	SensorHole    int
 	SensorRadius  int
 	SensorSpan    int
 	SensorMin     int
@@ -109,9 +113,9 @@ func Default() Config {
 	result := Config{
 		// MaxSpeed:  100,
 		MaxSpeed:      30,
-		OutSteeringPC: 150,
 		MaxSteeringPC: 120,
 		MaxSlowPC:     60,
+		SensorHole:    10,
 		SensorRadius:  100,
 		SensorSpan:    700,
 		SensorMin:     80,

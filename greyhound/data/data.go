@@ -6,21 +6,21 @@ import (
 
 // Point describes measures at one point in time
 type Point struct {
-	T        uint32
-	DT       uint16
-	Pos      int16
-	PosD     int16
-	PosI     int16
-	PosE     int16
-	FP       int16
-	FD       int16
-	FI       int16
-	FE       int16
-	Kind     uint8
-	Max      uint8
-	Steering int8
-	Left     int8
-	Right    int8
+	T      uint32
+	DT     uint16
+	Pos    int16
+	PosD   int16
+	PosI   int16
+	PosE   int16
+	FP     int16
+	FD     int16
+	FI     int16
+	FE     int16
+	SpeedL int16
+	SpeedR int16
+	Kind   uint8
+	Left   int8
+	Right  int8
 }
 
 var pointKinds [16]string
@@ -60,27 +60,27 @@ func Store(time uint32,
 	fI int16,
 	fE int16,
 	kind uint8,
-	max uint8,
-	steering int8,
+	speedL int16,
+	speedR int16,
 	left int8,
 	right int8) {
 
 	points[nextIndex] = Point{
-		T:        time / 100,
-		DT:       dt / 100,
-		Pos:      pos,
-		PosD:     posD,
-		PosI:     posI,
-		PosE:     posE,
-		FP:       fP,
-		FD:       fD,
-		FI:       fI,
-		FE:       fE,
-		Kind:     kind,
-		Max:      max,
-		Steering: steering,
-		Left:     left,
-		Right:    right,
+		T:      time / 100,
+		DT:     dt / 100,
+		Pos:    pos,
+		PosD:   posD,
+		PosI:   posI,
+		PosE:   posE,
+		FP:     fP,
+		FD:     fD,
+		FI:     fI,
+		FE:     fE,
+		Kind:   kind,
+		SpeedL: speedL,
+		SpeedR: speedR,
+		Left:   left,
+		Right:  right,
 	}
 	nextIndex++
 	if nextIndex >= maxPoints {
@@ -92,7 +92,7 @@ func Store(time uint32,
 }
 
 func printPoint(p *Point) {
-	fmt.Printf("%6d.%d %4d.%d %s   P %5d D %5d I %5d E %5d   F %4d %4d %4d %4d   M %3d S %4d L %4d R %4d\n",
+	fmt.Printf("%6d.%d %4d.%d %s   P %5d D %5d I %5d E %5d   F %4d %4d %4d %4d   Sl %4d Sr %4d L %4d R %4d\n",
 		p.T/10,
 		p.T%10,
 		p.DT/10,
@@ -106,8 +106,8 @@ func printPoint(p *Point) {
 		p.FD,
 		p.FI,
 		p.FE,
-		p.Max,
-		p.Steering,
+		p.SpeedL,
+		p.SpeedR,
 		p.Left,
 		p.Right)
 }

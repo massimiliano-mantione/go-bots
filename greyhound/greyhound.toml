@@ -1,12 +1,16 @@
 MaxSpeed=         50
 
-OutSteeringRn=    99
-OutSteeringRd=    100
-OutSteeringPC=    100
+OutInitMaxRn=     22
+OutInitMaxRd=     100
+OutPowerMax=      100
+OutPowerMin=      30
+OutPowerRn=       99
+OutPowerRd=       100
 
 MaxSteeringPC=    120
 MaxSlowPC=        60
 
+SensorHole=       40
 SensorRadius=     100
 SensorSpan=       700
 SensorMin=        80
