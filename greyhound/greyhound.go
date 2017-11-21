@@ -566,7 +566,7 @@ func followLine(lastGivenTicks int) {
 	estimatedSpeedLeft := 0
 	estimatedSpeedRight := 0
 
-	computedOutParameters := false
+	onTrackTicks := 0
 	outLeftPowerTarget := 0
 	outLeftPowerDelta := 0
 	outRightPowerTarget := 0
@@ -614,7 +614,7 @@ func followLine(lastGivenTicks int) {
 				dMillis = cdt / 1000
 			}
 
-			if computedOutParameters {
+			if onTrackTicks < 100 {
 				posD = 0
 			} else {
 				posD = ((pos - lastPos) * 100000) / cdt
@@ -655,6 +655,12 @@ func followLine(lastGivenTicks int) {
 			estimatedSpeedRight *= conf.SpeedEstRn
 			estimatedSpeedRight /= conf.SpeedEstRd
 			estimatedSpeedRight += powerRight
+
+			// Reduce out power deltas
+			outLeftPowerDelta *= conf.OutPowerRn
+			outLeftPowerDelta /= conf.OutPowerRd
+			outRightPowerDelta *= conf.OutPowerRn
+			outRightPowerDelta /= conf.OutPowerRd
 		}
 
 		// print(dMillis, "power", powerLeft, powerRight, "speed", estimatedSpeedLeft, estimatedSpeedRight)
@@ -679,14 +685,12 @@ func followLine(lastGivenTicks int) {
 		// Compute steering
 		steering := factorP + factorD + factorI
 		if out {
-			if !computedOutParameters {
-				computedOutParameters = true
-
-				estimatedDirection := sign(estimatedSpeedRight - estimatedSpeedLeft)
+			if onTrackTicks > 0 {
+				// estimatedDirection := sign(estimatedSpeedRight - estimatedSpeedLeft)
 
 				initialOuterPowerDelta := 0
 				initialInnerPowerDelta := 0
-				if sign(estimatedDirection*lastNonZeroDirection) > 0 {
+				if ticksToMillis(onTrackTicks) > conf.OutTimeMs {
 					initialOuterPowerDelta = conf.OutPowerMax - conf.OutPowerMin
 					initialInnerPowerDelta = -conf.OutPowerMax
 				}
@@ -703,21 +707,15 @@ func followLine(lastGivenTicks int) {
 					outRightPowerDelta = initialOuterPowerDelta
 				}
 
-				print("OUT INIT", estimatedDirection, lastNonZeroDirection, outLeftPowerDelta, outRightPowerDelta)
-
-			} else {
-				for i := 0; i < dMillis; i++ {
-					outLeftPowerDelta *= conf.OutPowerRn
-					outLeftPowerDelta /= conf.OutPowerRd
-					outRightPowerDelta *= conf.OutPowerRn
-					outRightPowerDelta /= conf.OutPowerRd
-				}
+				print("OUT INIT", ticksToMillis(onTrackTicks), lastNonZeroDirection, outLeftPowerDelta, outRightPowerDelta)
 			}
+
+			onTrackTicks = 0
 
 			powerLeft = outLeftPowerTarget + outLeftPowerDelta
 			powerRight = outRightPowerTarget + outRightPowerDelta
 		} else {
-			computedOutParameters = false
+			onTrackTicks += dt
 
 			// Apply slowdown
 			actualMaxSpeed := (maxSpeed * (100 - factorE)) / 100

@@ -10,12 +10,11 @@ import (
 type Config struct {
 	MaxSpeed int
 
-	OutInitMaxRn int
-	OutInitMaxRd int
-	OutPowerMax  int
-	OutPowerMin  int
-	OutPowerRn   int
-	OutPowerRd   int
+	OutTimeMs   int
+	OutPowerMax int
+	OutPowerMin int
+	OutPowerRn  int
+	OutPowerRd  int
 
 	MaxSteeringPC int
 	MaxSlowPC     int
