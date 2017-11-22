@@ -1,7 +1,9 @@
 package data
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 )
 
 // Point describes measures at one point in time
@@ -91,8 +93,9 @@ func Store(time uint32,
 	}
 }
 
-func printPoint(p *Point) {
-	fmt.Printf("%6d.%d %4d.%d %s   P %5d D %5d I %5d E %5d   F %4d %4d %4d %4d   Sl %4d Sr %4d L %4d R %4d\n",
+func printPoint(w *bufio.Writer, p *Point) {
+	// TODO: handle errors
+	w.WriteString(fmt.Sprintf("%6d.%d %4d.%d %s   P %5d D %5d I %6d E %5d   F %4d %4d %4d %4d   Sl %4d Sr %4d L %4d R %4d\n",
 		p.T/10,
 		p.T%10,
 		p.DT/10,
@@ -109,11 +112,18 @@ func printPoint(p *Point) {
 		p.SpeedL,
 		p.SpeedR,
 		p.Left,
-		p.Right)
+		p.Right))
 }
 
 // Print prints the data
 func Print() {
+	file, err := os.OpenFile("data.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	w := bufio.NewWriter(file)
+	defer w.Flush()
 	fmt.Println()
 	fmt.Println("Data points")
 	for i := startIndex; i < maxPoints; i++ {
@@ -121,10 +131,10 @@ func Print() {
 			fmt.Println()
 			return
 		}
-		printPoint(&points[i])
+		printPoint(w, &points[i])
 	}
 	for i := 0; i < nextIndex; i++ {
-		printPoint(&points[i])
+		printPoint(w, &points[i])
 	}
 	fmt.Println()
 }

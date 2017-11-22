@@ -170,7 +170,6 @@ var lastMoveTicks int
 var lastSpeedLeft int
 var lastSpeedRight int
 
-const accelPerTicks int = 5
 const accelSpeedFactor int = 10000
 
 func stop() {
@@ -205,8 +204,8 @@ func move(left int, right int, now int) {
 
 	nextSpeedLeft := lastSpeedLeft
 	nextSpeedRight := lastSpeedRight
-	delta := ticks * accelPerTicks
-	// delta := ticks * ticks * accelPerTicks
+	delta := ticks * conf.AccelPerTicksN
+	delta /= conf.AccelPerTicksD
 
 	if left > nextSpeedLeft {
 		nextSpeedLeft += delta
@@ -674,12 +673,7 @@ func followLine(lastGivenTicks int) {
 		factorD := (posDAverage * conf.KDn * maxSpeed) / (conf.MaxPosD * conf.KDd)
 		factorI := (posI * conf.KIn * maxSpeed) / conf.KId
 
-		var factorE int
-		if posE <= conf.KELimit {
-			factorE = 0
-		} else {
-			factorE = ((posE - conf.KELimit) * conf.KEn) / conf.KEd
-		}
+		factorE := ((posE / conf.KELimit) * conf.KEn) / conf.KEd
 
 		// Limit slowness factor
 		if factorE > conf.MaxSlowPC {

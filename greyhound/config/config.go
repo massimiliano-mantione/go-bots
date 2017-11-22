@@ -8,7 +8,9 @@ import (
 
 // Config data
 type Config struct {
-	MaxSpeed int
+	MaxSpeed       int
+	AccelPerTicksN int
+	AccelPerTicksD int
 
 	OutTimeMs   int
 	OutPowerMax int

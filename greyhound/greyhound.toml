@@ -1,13 +1,15 @@
 MaxSpeed=         50
+AccelPerTicksN=   5
+AccelPerTicksD=   1
 
 OutTimeMs=        500
-OutPowerMax=      100
+OutPowerMax=      60
 OutPowerMin=      30
-OutPowerRn=       99
+OutPowerRn=       95
 OutPowerRd=       100
 
 MaxSteeringPC=    120
-MaxSlowPC=        60
+MaxSlowPC=        50
 
 SensorHole=       40
 SensorRadius=     100
@@ -17,23 +19,22 @@ MinDTicks=        10
 MaxDTicks=        30000
 MinOutMillis=     10
 DAvgMillis=       42
-SpeedEstRn=       80
+SpeedEstRn=       95
 SpeedEstRd=       100
 
-
-KPn=              1
-KPd=              4
-KDn=              1
-KDd=              20
+KPn=              20
+KPd=              100
+KDn=              2
+KDd=              100
 KIn=              0
-KId=              1
-KIrn=             90
+KId=              1000
+KIrn=             99
 KIrd=             100
 KEReduction=      180
-KELimit=          1
-KEn=              0
-KEd=              2
-KErn=             90
+KELimit=          5000
+KEn=              10
+KEd=              1
+KErn=             99
 KErd=             100
 
 SlowStart1=       0
