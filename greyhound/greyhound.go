@@ -572,6 +572,8 @@ func followLine(lastGivenTicks int) {
 	outRightPowerTarget := 0
 	outRightPowerDelta := 0
 
+	attenuationTicks := currentTicks()
+
 	for {
 		now := currentTicks()
 		sr, pos, hint, cross, out := processSensorData()
@@ -634,7 +636,9 @@ func followLine(lastGivenTicks int) {
 
 		// Apply attenuations and updates
 		pos2e := pos * pos / conf.KEReduction
-		for i := 0; i < dMillis; i++ {
+		for attenuationTicks < now {
+			attenuationTicks += 1000
+
 			// I
 			posI *= conf.KIrn
 			posI /= conf.KIrd
