@@ -14,12 +14,13 @@ type Config struct {
 	SeekTurnSpeed        int
 	TrackSpeed           int
 	MaxIrFront           int
-	MaxIrSide			int
+	MaxIrSide            int
 	StrategyR1Time       int
 	StrategyS1Time       int
 	StrategyR2Time       int
 	StrategyS2Time       int
 	StrategyStraightTime int
+	WaitTime             int
 }
 
 // Default Config data
@@ -37,6 +38,7 @@ func Default() Config {
 		StrategyR2Time:       470,
 		StrategyS2Time:       120,
 		StrategyStraightTime: 400,
+		WaitTime:             4800,
 	}
 	fixConfig(&result)
 	return result
@@ -68,4 +70,5 @@ func fixConfig(c *Config) {
 	c.StrategyR2Time *= 1000
 	c.StrategyS2Time *= 1000
 	c.StrategyStraightTime *= 1000
+	c.WaitTime *= 1000
 }
