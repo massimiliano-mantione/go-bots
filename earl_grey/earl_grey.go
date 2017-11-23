@@ -182,10 +182,6 @@ func close() {
 	closeIrRemote()
 }
 
-var lastMoveTicks int
-var lastSpeedLeft int
-var lastSpeedRight int
-
 const accelPerTicks int = 5
 
 func moveStop() {
@@ -196,15 +192,50 @@ func move(left int, right int) {
 	moveFull(left, right, 1)
 }
 
-func moveFull(left int, right int, useBack int) {
+var lastMoveTicks int
+var lastSpeedLeft int
+var lastSpeedRight int
 
-	motorL.Value = left
-	motorR.Value = right
+const accelSpeedFactor int = 10000
+
+func moveFull(left int, right int, useBack int) {
+	now := currentTicks()
+	ticks := now - lastMoveTicks
+	lastMoveTicks = now
+
+	right *= accelSpeedFactor
+	left *= accelSpeedFactor
+
+	nextSpeedLeft := lastSpeedLeft
+	nextSpeedRight := lastSpeedRight
+	delta := ticks * 30
+
+	if left > nextSpeedLeft {
+		nextSpeedLeft += delta
+		if nextSpeedLeft > left {
+			nextSpeedLeft = left
+		}
+	} else if left < nextSpeedLeft {
+		nextSpeedLeft = left
+	}
+	if right > nextSpeedRight {
+		nextSpeedRight += delta
+		if nextSpeedRight > right {
+			nextSpeedRight = right
+		}
+	} else if right < nextSpeedRight {
+		nextSpeedRight = right
+	}
+	lastSpeedLeft = nextSpeedLeft
+	lastSpeedRight = nextSpeedRight
+
+	motorL.Value = nextSpeedLeft / accelSpeedFactor
+	motorR.Value = nextSpeedRight / accelSpeedFactor
 
 	if useBack == -1 {
 		motorBL.Value = -100
 		motorBR.Value = -100
-	} else if useBack == 1 && left == 100 && right == 100 {
+	} else if useBack == 1 {
 		motorBL.Value = 100
 		motorBR.Value = 100
 	} else {
@@ -367,14 +398,14 @@ func strategy() ev3.Direction {
 	}
 }
 
-func moveStrategyFull(dir ev3.Direction, duration int, useBack int) bool {
+func moveStrategyFull(dir ev3.Direction, duration int, useBack int, useVision bool) bool {
 	start := currentTicks()
 	for {
 		now := currentTicks()
 		if now-start >= duration {
 			break
 		}
-		if checkVision() {
+		if useVision && checkVision() {
 			return true
 		}
 		if dir == ev3.Left {
@@ -389,15 +420,15 @@ func moveStrategyFull(dir ev3.Direction, duration int, useBack int) bool {
 }
 
 func moveStrategy(dir ev3.Direction, duration int) bool {
-	return moveStrategyFull(dir, duration, 0)
+	return moveStrategyFull(dir, duration, 0, true)
 }
 
 func strategyTurn(dir ev3.Direction) {
 
-	if moveStrategyFull(dir, conf.StrategyR1Time, 0) {
+	if moveStrategyFull(dir, conf.StrategyR1Time, 0, false) {
 		return
 	}
-	if moveStrategyFull(0, 100000, -1) {
+	if moveStrategyFull(0, 100000, -1, false) {
 		return
 	}
 
@@ -414,10 +445,10 @@ func strategyTurn(dir ev3.Direction) {
 
 func strategyStraight() {
 
-	if moveStrategyFull(0, conf.StrategyR1Time, 0) {
+	if moveStrategyFull(0, conf.StrategyR1Time, 0, false) {
 		return
 	}
-	if moveStrategyFull(0, 100000, -1) {
+	if moveStrategyFull(0, 100000, -1, false) {
 		return
 	}
 
