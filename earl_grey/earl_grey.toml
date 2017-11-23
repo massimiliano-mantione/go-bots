@@ -9,3 +9,4 @@ StrategyS1Time=       900
 StrategyR2Time=       1000
 StrategyS2Time=       900
 StrategyStraightTime= 1200
+WaitTime=             4800

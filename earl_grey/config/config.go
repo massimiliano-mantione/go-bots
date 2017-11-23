@@ -19,6 +19,7 @@ type Config struct {
 	StrategyR2Time       int
 	StrategyS2Time       int
 	StrategyStraightTime int
+	WaitTime             int
 }
 
 // Default Config data
@@ -35,6 +36,7 @@ func Default() Config {
 		StrategyR2Time:       1000,
 		StrategyS2Time:       900,
 		StrategyStraightTime: 1200,
+		WaitTime:             4800,
 	}
 }
 
@@ -64,4 +66,5 @@ func fixConfig(c *Config) {
 	c.StrategyR2Time *= 1000
 	c.StrategyS2Time *= 1000
 	c.StrategyStraightTime *= 1000
+	c.WaitTime *= 1000
 }

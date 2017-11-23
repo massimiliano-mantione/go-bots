@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"go-bots/beep"
+	"go-bots/earl_grey/config"
 	"go-bots/ev3"
-	"go-bots/super_red/config"
 	"log"
 	"os"
 	"os/signal"
@@ -271,7 +271,7 @@ func checkVision() bool {
 }
 
 func loadConfig() {
-	newConf, err := config.FromFile("super_red.toml")
+	newConf, err := config.FromFile("earl_grey.toml")
 	if err != nil {
 		print("Error reading conf:", err)
 		conf = config.Default()
@@ -345,7 +345,7 @@ func waitBegin() {
 		now := currentTicks()
 		elapsed := now - start
 		moveStop()
-		if elapsed >= 4800000 {
+		if elapsed >= conf.WaitTime {
 			return
 		}
 	}
